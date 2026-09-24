@@ -1,0 +1,3 @@
+id,meter_id,timestamp,type,description
+EV-001,M-104,2026-09-08T06:00:00Z,PRODUCTION_LINE_START,Arranque de la nueva línea productiva 2B
+EV-002,M-106,2026-09-10T00:00:00Z,SCHEDULED_SHUTDOWN,Parada programada de mantenimiento del horno (72 h)

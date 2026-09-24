@@ -1,0 +1,157 @@
+package httpapi_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/yefersongallo/bia-energy/backend/internal/analysis"
+	"github.com/yefersongallo/bia-energy/backend/internal/app"
+	"github.com/yefersongallo/bia-energy/backend/internal/dataset"
+	"github.com/yefersongallo/bia-energy/backend/internal/domain"
+	"github.com/yefersongallo/bia-energy/backend/internal/explain"
+	"github.com/yefersongallo/bia-energy/backend/internal/httpapi"
+	"github.com/yefersongallo/bia-energy/backend/internal/store/memory"
+)
+
+type harness struct {
+	t     *testing.T
+	h     http.Handler
+	svc   *app.Service
+	token string
+}
+
+func setup(t *testing.T) *harness {
+	t.Helper()
+	st := memory.New()
+	ds := dataset.Generate()
+	_ = st.Seed(context.Background(), ds.Meters, ds.Readings, ds.Events)
+	svc := app.New(st, analysis.New(analysis.DefaultConfig()), explain.Template{}, app.Options{})
+	auth := httpapi.Auth{Secret: []byte("test"), User: "operador@vatio.demo", Password: "demo", TTL: time.Hour}
+	hs := &harness{t: t, h: httpapi.New(svc, httpapi.Config{Auth: auth, CORSOrigin: "*"}), svc: svc}
+	var login struct{ Token string }
+	hs.do("POST", "/api/auth/login", map[string]string{"email": "operador@vatio.demo", "password": "demo"}, http.StatusOK, &login)
+	hs.token = login.Token
+	return hs
+}
+
+func (hs *harness) do(method, path string, body any, want int, out any) {
+	hs.t.Helper()
+	var buf bytes.Buffer
+	if body != nil {
+		_ = json.NewEncoder(&buf).Encode(body)
+	}
+	req := httptest.NewRequest(method, path, &buf)
+	if hs.token != "" {
+		req.Header.Set("Authorization", "Bearer "+hs.token)
+	}
+	rec := httptest.NewRecorder()
+	hs.h.ServeHTTP(rec, req)
+	if rec.Code != want {
+		hs.t.Fatalf("%s %s = %d, want %d: %s", method, path, rec.Code, want, rec.Body.String())
+	}
+	if out != nil {
+		if err := json.Unmarshal(rec.Body.Bytes(), out); err != nil {
+			hs.t.Fatalf("decode %s: %v", path, err)
+		}
+	}
+}
+
+func TestAuthRequired(t *testing.T) {
+	hs := setup(t)
+	hs.token = ""
+	hs.do("GET", "/api/meters", nil, http.StatusUnauthorized, nil)
+	hs.do("GET", "/api/health", nil, http.StatusOK, nil)
+	hs.do("POST", "/api/auth/login", map[string]string{"email": "operador@vatio.demo", "password": "wrong"}, http.StatusUnauthorized, nil)
+}
+
+func TestMetersEndpoints(t *testing.T) {
+	hs := setup(t)
+	var meters []app.MeterSummary
+	hs.do("GET", "/api/meters?status=critical", nil, http.StatusOK, &meters)
+	if len(meters) != 1 || meters[0].ID != "M-109" {
+		t.Fatalf("critical meters = %+v", meters)
+	}
+	hs.do("GET", "/api/meters?sort=bogus", nil, http.StatusBadRequest, nil)
+
+	var detail app.MeterDetail
+	hs.do("GET", "/api/meters/M-104", nil, http.StatusOK, &detail)
+	if len(detail.Events) != 1 || len(detail.Stats.Days) != 14 {
+		t.Fatalf("M-104 detail: %d events, %d days", len(detail.Events), len(detail.Stats.Days))
+	}
+	var readings []domain.Reading
+	hs.do("GET", "/api/meters/M-104/readings", nil, http.StatusOK, &readings)
+	if len(readings) != 336 {
+		t.Fatalf("readings = %d, want 336", len(readings))
+	}
+	hs.do("GET", "/api/meters/M-999", nil, http.StatusNotFound, nil)
+
+	var events []domain.Event
+	hs.do("GET", "/api/events", nil, http.StatusOK, &events)
+	if len(events) != 2 || events[0].ID != "EV-001" {
+		t.Fatalf("events = %+v", events)
+	}
+}
+
+func TestAnalysisFlowOverHTTP(t *testing.T) {
+	hs := setup(t)
+	var run domain.AnalysisRun
+	hs.do("POST", "/api/ai/analyze", nil, http.StatusAccepted, &run)
+	hs.svc.Wait()
+	hs.do("GET", "/api/ai/analysis/"+run.ID, nil, http.StatusOK, &run)
+	if run.Status != domain.RunCompleted || run.Summary.Anomalies != 4 {
+		t.Fatalf("run = %s, summary = %+v", run.Status, run.Summary)
+	}
+	hs.do("GET", "/api/ai/analysis/latest", nil, http.StatusOK, &run)
+
+	var anomalies []domain.Anomaly
+	hs.do("GET", "/api/anomalies", nil, http.StatusOK, &anomalies)
+	if anomalies[0].MeterID != "M-109" || anomalies[0].Type != domain.RealAnomaly {
+		t.Fatalf("first anomaly = %s %s", anomalies[0].MeterID, anomalies[0].Type)
+	}
+	var detail map[string]any
+	hs.do("GET", "/api/anomalies/"+anomalies[0].ID, nil, http.StatusOK, &detail)
+	if detail["anomaly"] != true || detail["recommended_action"] == "" {
+		t.Fatalf("detail = %v", detail)
+	}
+	hs.do("PATCH", "/api/anomalies/"+anomalies[0].ID, map[string]string{"status": "RESOLVED"}, http.StatusOK, nil)
+	hs.do("PATCH", "/api/anomalies/"+anomalies[0].ID, map[string]string{"status": "ACKNOWLEDGED"}, http.StatusConflict, nil)
+
+	var summary app.Summary
+	hs.do("GET", "/api/dashboard/summary", nil, http.StatusOK, &summary)
+	if *summary.OpenAnomalies != 3 {
+		t.Fatalf("open anomalies = %d, want 3", *summary.OpenAnomalies)
+	}
+	hs.do("GET", "/api/reports/latest", nil, http.StatusOK, nil)
+}
+
+func TestReportBeforeAnalysisIs404(t *testing.T) {
+	setup(t).do("GET", "/api/reports/latest", nil, http.StatusNotFound, nil)
+}
+
+func TestCORSPreflight(t *testing.T) {
+	hs := setup(t)
+	req := httptest.NewRequest(http.MethodOptions, "/api/meters", nil)
+	rec := httptest.NewRecorder()
+	hs.h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent || rec.Header().Get("Access-Control-Allow-Origin") != "*" {
+		t.Fatalf("preflight = %d %v", rec.Code, rec.Header())
+	}
+}
+
+func TestExpiredToken(t *testing.T) {
+	now := time.Now()
+	a := httpapi.Auth{Secret: []byte("s"), User: "u", Password: "p", TTL: time.Minute, Now: func() time.Time { return now }}
+	tok, _, _ := a.Login("u", "p")
+	a.Now = func() time.Time { return now.Add(2 * time.Minute) }
+	if _, err := a.Verify(tok); err == nil {
+		t.Fatal("expired token accepted")
+	}
+	if _, err := a.Verify(tok + "x"); err == nil {
+		t.Fatal("tampered token accepted")
+	}
+}

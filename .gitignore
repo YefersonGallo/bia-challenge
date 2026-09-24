@@ -1,0 +1,15 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# ground truth reserved to the evaluator: never commit it
+**/expected_results*.csv
+
+# build outputs
+node_modules/
+dist/
+coverage/
+backend/bin/
+*.log
+.DS_Store

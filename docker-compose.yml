@@ -1,0 +1,51 @@
+# Vatio · AI Energy Management — full stack: PostgreSQL + Go API + React SPA (nginx).
+#   cp .env.example .env   # set AUTH_SECRET and, optionally, ANTHROPIC_API_KEY
+#   docker compose up --build
+#   open http://localhost:8080  (operador@vatio.demo / demo)
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vatio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vatio}
+      POSTGRES_DB: vatio
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vatio -d vatio"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgres://vatio:${POSTGRES_PASSWORD:-vatio}@db:5432/vatio?sslmode=disable
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-5}
+      DEMO_USER: ${DEMO_USER:-operador@vatio.demo}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-demo}
+      STEP_DELAY_MS: ${STEP_DELAY_MS:-450}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # Not published: only reachable through the web container.
+    expose:
+      - "8080"
+
+  web:
+    build: ./frontend
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

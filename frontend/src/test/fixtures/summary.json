@@ -1,0 +1,74 @@
+{
+ "meters": 12,
+ "status_counts": {
+  "ALERT": 3,
+  "CRITICAL": 1,
+  "OK": 8
+ },
+ "current_kwh": 13983.6,
+ "baseline_kwh": 12514.3,
+ "variation_pct": 11.7,
+ "anomalies": 4,
+ "high_priority": 2,
+ "open_anomalies": 4,
+ "avg_confidence": 0.91,
+ "last_analysis": {
+  "id": "A-0924-1856-a133",
+  "status": "COMPLETED",
+  "started_at": "2026-09-24T18:56:20.691248044Z",
+  "finished_at": "2026-09-24T18:56:22.799201227Z",
+  "current_step": 7,
+  "steps": [
+   {
+    "key": "readings",
+    "label": "Lecturas",
+    "status": "COMPLETED",
+    "result": "4.032 lecturas · 25 inválidas"
+   },
+   {
+    "key": "baseline",
+    "label": "Baseline",
+    "status": "COMPLETED",
+    "result": "12 perfiles horarios · días 1–7"
+   },
+   {
+    "key": "detection",
+    "label": "Detección",
+    "status": "COMPLETED",
+    "result": "3 desviaciones sostenidas"
+   },
+   {
+    "key": "correlation",
+    "label": "Correlación",
+    "status": "COMPLETED",
+    "result": "2 relaciones eléctricas anómalas"
+   },
+   {
+    "key": "events",
+    "label": "Eventos",
+    "status": "COMPLETED",
+    "result": "2 eventos coherentes"
+   },
+   {
+    "key": "explanation",
+    "label": "Explicación",
+    "status": "COMPLETED",
+    "result": "4 explicaciones · 0 con Claude"
+   },
+   {
+    "key": "recommendation",
+    "label": "Recomendación",
+    "status": "COMPLETED",
+    "result": "2 de prioridad alta · M-109 primero"
+   }
+  ],
+  "summary": {
+   "anomalies": 4,
+   "high_priority": 2,
+   "avg_confidence": 0.91,
+   "headline": "4 anomalías detectadas · 2 requieren atención prioritaria"
+  }
+ },
+ "invalid_readings": 25,
+ "readings": 4032
+}

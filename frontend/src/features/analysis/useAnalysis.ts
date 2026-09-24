@@ -1,0 +1,43 @@
+import { useEffect, useRef } from 'react'
+import { useAnalysisRun, useInvalidateDerived, useStartAnalysis } from '@/shared/api/queries'
+import type { AnalysisRun } from '@/shared/api/types'
+import { useAnalysisUi } from './analysisStore'
+
+export const isRunning = (r: AnalysisRun | null | undefined) => r?.status === 'RUNNING' || r?.status === 'PENDING'
+
+/** Percentage of completed steps of a run. */
+export function runProgress(r: AnalysisRun | null | undefined): number {
+  if (!r || r.steps.length === 0) return 0
+  if (r.status === 'COMPLETED') return 100
+  const done = r.steps.filter((s) => s.status === 'COMPLETED').length
+  return Math.round((done / r.steps.length) * 100)
+}
+
+/**
+ * Orchestrates the analysis flow: starts a run, follows it with polling and, when it
+ * finishes, invalidates every derived query (meters, anomalies, report…).
+ */
+export function useAnalysis() {
+  const { runId, follow } = useAnalysisUi()
+  const run = useAnalysisRun(runId)
+  const start = useStartAnalysis()
+  const invalidate = useInvalidateDerived()
+  const prev = useRef<string | undefined>(undefined)
+
+  const current = run.data ?? null
+  useEffect(() => {
+    const was = prev.current
+    prev.current = current?.status
+    if ((was === 'RUNNING' || was === 'PENDING') && (current?.status === 'COMPLETED' || current?.status === 'FAILED')) {
+      void invalidate()
+    }
+  }, [current?.status, invalidate])
+
+  return {
+    run: current,
+    running: isRunning(current) || start.isPending,
+    progress: runProgress(current),
+    start: () => start.mutate(undefined, { onSuccess: (r) => follow(r.id) }),
+    startError: start.error,
+  }
+}

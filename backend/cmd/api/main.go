@@ -1,0 +1,156 @@
+// Command api runs the Vatio REST API.
+//
+// Configuration (environment):
+//
+//	PORT               default 8080
+//	DATABASE_URL       PostgreSQL DSN; when empty an in-memory store is used
+//	DATA_DIR           directory with readings.csv / events.csv (default ./data)
+//	ANTHROPIC_API_KEY  enables explanations written by Claude
+//	ANTHROPIC_MODEL    Claude model id (default claude-sonnet-4-5)
+//	AUTH_SECRET        HMAC secret for tokens (required in production)
+//	DEMO_USER / DEMO_PASSWORD  demo credentials
+//	CORS_ORIGIN        allowed origin for the SPA (default *)
+//	STEP_DELAY_MS      pause between pipeline steps for the UI (default 450)
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+	"time"
+
+	"github.com/yefersongallo/bia-energy/backend/internal/analysis"
+	"github.com/yefersongallo/bia-energy/backend/internal/app"
+	"github.com/yefersongallo/bia-energy/backend/internal/explain"
+	"github.com/yefersongallo/bia-energy/backend/internal/httpapi"
+	"github.com/yefersongallo/bia-energy/backend/internal/ingest"
+	"github.com/yefersongallo/bia-energy/backend/internal/store/memory"
+	"github.com/yefersongallo/bia-energy/backend/internal/store/postgres"
+)
+
+func env(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
+func main() {
+	// "api healthcheck" lets distroless containers probe the server without a shell.
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(healthcheck())
+	}
+	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	if err := run(log); err != nil {
+		log.Error("fatal", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run(log *slog.Logger) error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	store, err := openStore(ctx, log)
+	if err != nil {
+		return err
+	}
+	if err := seed(ctx, store, env("DATA_DIR", "data"), log); err != nil {
+		return err
+	}
+
+	var explainer explain.Explainer = explain.Template{}
+	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
+		model := env("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+		explainer = explain.WithFallback{
+			Primary: explain.NewClaude(key, model), Fallback: explain.Template{},
+			OnFallback: func(meter string, err error) { log.Warn("claude fallback to template", "meter", meter, "err", err) },
+		}
+		log.Info("explanations by Claude enabled", "model", model)
+	} else {
+		log.Info("ANTHROPIC_API_KEY not set: using template explanations")
+	}
+
+	delay, _ := strconv.Atoi(env("STEP_DELAY_MS", "450"))
+	svc := app.New(store, analysis.New(analysis.DefaultConfig()), explainer, app.Options{StepDelay: time.Duration(delay) * time.Millisecond, Logger: log})
+
+	secret := os.Getenv("AUTH_SECRET")
+	if secret == "" {
+		secret = "dev-secret-change-me"
+		log.Warn("AUTH_SECRET not set: using an insecure development secret")
+	}
+	handler := httpapi.New(svc, httpapi.Config{
+		Auth:       httpapi.Auth{Secret: []byte(secret), User: env("DEMO_USER", "operador@vatio.demo"), Password: env("DEMO_PASSWORD", "demo"), TTL: 12 * time.Hour},
+		CORSOrigin: env("CORS_ORIGIN", "*"),
+		Logger:     log,
+	})
+	srv := &http.Server{Addr: ":" + env("PORT", "8080"), Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+
+	errc := make(chan error, 1)
+	go func() {
+		log.Info("listening", "addr", srv.Addr)
+		errc <- srv.ListenAndServe()
+	}()
+	select {
+	case err := <-errc:
+		if !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+	case <-ctx.Done():
+	}
+	shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err = srv.Shutdown(shutdown)
+	svc.Wait()
+	return err
+}
+
+func openStore(ctx context.Context, log *slog.Logger) (app.Store, error) {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Info("DATABASE_URL not set: using in-memory store")
+		return memory.New(), nil
+	}
+	var lastErr error
+	for i := 0; i < 20; i++ { // wait for the database container
+		st, err := postgres.Open(ctx, dsn)
+		if err == nil {
+			log.Info("connected to PostgreSQL")
+			return st, nil
+		}
+		lastErr = err
+		time.Sleep(time.Second)
+	}
+	return nil, lastErr
+}
+
+func seed(ctx context.Context, store app.Store, dir string, log *slog.Logger) error {
+	empty, err := store.Empty(ctx)
+	if err != nil || !empty {
+		return err
+	}
+	data, err := ingest.LoadDir(dir)
+	if err != nil {
+		return err
+	}
+	log.Info("seeding", "dir", dir, "meters", len(data.Meters), "readings", len(data.Readings), "events", len(data.Events))
+	return store.Seed(ctx, data.Meters, data.Readings, data.Events)
+}
+
+func healthcheck() int {
+	c := http.Client{Timeout: 3 * time.Second}
+	res, err := c.Get("http://127.0.0.1:" + env("PORT", "8080") + "/api/health")
+	if err != nil {
+		return 1
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return 1
+	}
+	return 0
+}

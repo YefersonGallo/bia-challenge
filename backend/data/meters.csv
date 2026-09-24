@@ -1,0 +1,13 @@
+meter_id,name,location
+M-101,Compresor principal,Planta Norte · L1
+M-102,Iluminación bodega,Bodega A
+M-103,HVAC oficinas,Edificio administrativo
+M-104,Línea de ensamble 2,Planta Norte · L2
+M-105,Cuarto frío,Planta Sur
+M-106,Horno industrial,Planta Sur
+M-107,Bombas de agua,Cuarto de bombas
+M-108,Tablero general,Subestación A
+M-109,Compresor línea 3,Planta Norte · L3
+M-110,Data center,Edificio administrativo
+M-111,Taller de mantenimiento,Planta Sur
+M-112,Subestación B,Subestación B

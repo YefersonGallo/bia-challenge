@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/* Design tokens of the control room (dark) and of the report paper (light). */
+@theme {
+  --color-bg: #07090c;
+  --color-panel: #0e1318;
+  --color-panel-2: #0b0f13;
+  --color-raise: #141b23;
+  --color-line: #1c242e;
+  --color-line-2: #2e3a48;
+  --color-ink: #e6edf3;
+  --color-ink-2: #c3ccd6;
+  --color-soft: #aeb8c4;
+  --color-muted: #8592a3;
+  --color-dim: #5c6b7d;
+  --color-accent: #4fb3ff;
+  --color-real: #ff4d3d;
+  --color-data: #9d7bff;
+  --color-expl: #ffb020;
+  --color-fp: #7d8ca0;
+  --color-ok: #2bd17e;
+
+  --color-paper: #fbfbf9;
+  --color-paper-ink: #0e1116;
+  --color-paper-2: #2b313b;
+  --color-paper-muted: #5d6470;
+  --color-paper-line: #e3e5ea;
+  --color-report: #1b2bd6;
+  --color-real-l: #d6341b;
+  --color-data-l: #6a3fd6;
+  --color-expl-l: #9a6400;
+  --color-fp-l: #5b6878;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-display: "Space Grotesk", "IBM Plex Sans", sans-serif;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@utility label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
