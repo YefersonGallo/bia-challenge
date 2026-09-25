@@ -89,7 +89,28 @@ func readHeader(r *csv.Reader) (header, error) {
 	for i, c := range cols {
 		h[strings.ToLower(strings.TrimSpace(strings.TrimPrefix(c, "\ufeff")))] = i
 	}
+	// Map known aliases onto the canonical names (the official events.csv uses
+	// event_timestamp / event_type, other exports use datetime, kwh…).
+	for alias, canonical := range columnAliases {
+		if i, ok := h[alias]; ok {
+			if _, exists := h[canonical]; !exists {
+				h[canonical] = i
+			}
+		}
+	}
 	return h, nil
+}
+
+var columnAliases = map[string]string{
+	"event_timestamp": "timestamp", "datetime": "timestamp", "date_time": "timestamp", "ts": "timestamp", "fecha": "timestamp",
+	"event_type": "type", "tipo": "type",
+	"event_id":          "id",
+	"event_description": "description", "descripcion": "description", "descripción": "description",
+	"meter": "meter_id", "medidor": "meter_id",
+	"kwh": "consumption_kwh", "consumption": "consumption_kwh", "consumo_kwh": "consumption_kwh",
+	"voltage": "voltage_v", "voltaje_v": "voltage_v",
+	"current": "current_a", "corriente_a": "current_a",
+	"pf": "power_factor", "factor_potencia": "power_factor",
 }
 
 func (h header) get(rec []string, names ...string) string {

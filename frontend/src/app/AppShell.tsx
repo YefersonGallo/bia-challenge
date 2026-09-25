@@ -12,8 +12,8 @@ function HeaderKpis() {
   if (!s) return null
   const items = [
     { l: 'MEDIDORES', v: String(s.meters) },
-    { l: 'KWH 7 D', v: fmtNum(s.current_kwh) },
-    { l: 'VS BASELINE', v: fmtPct(s.variation_pct), c: Math.abs(s.variation_pct) >= 10 ? 'var(--color-expl)' : undefined },
+    { l: `KWH ${s.period_days || 14} D`, v: fmtNum(s.period_kwh) },
+    { l: '24 H VS BASELINE', v: fmtPct(s.variation_pct), c: Math.abs(s.variation_pct) >= 10 ? 'var(--color-expl)' : undefined },
     { l: 'ANOMALÍAS', v: s.anomalies == null ? '—' : String(s.anomalies) },
     { l: 'ALTA PRIOR.', v: s.high_priority == null ? '—' : String(s.high_priority), c: s.high_priority ? 'var(--color-real)' : undefined },
     { l: 'CONF.', v: s.avg_confidence == null ? '—' : fmtConf(s.avg_confidence) },

@@ -23,13 +23,14 @@ export function executiveSummary(r: Report): string[] {
   }
   for (const f of byType(r, 'DATA_QUALITY')) {
     out.push(
-      `${f.meter_id} no tiene un problema de consumo sino de medición: ${fmtNum(f.evidence.invalid_readings)} lecturas son físicamente imposibles ` +
-        `y solo el ${fmtNum(f.evidence.physical_coherence * 100)}% cumple kWh ≈ V·I·PF. Hay que validar el medidor antes de usar sus datos.`,
+      `${f.meter_id} no tiene un problema de consumo sino de medición: ${fmtNum(f.evidence.invalid_readings)} lecturas son físicamente inconsistentes` +
+        `${f.evidence.onset_day ? ` desde el día ${f.evidence.onset_day}` : ''} mientras el consumo se mantiene estable. Hay que validar el medidor antes de usar sus datos.`,
     )
   }
   const explained = [...byType(r, 'EXPLAINABLE_ANOMALY'), ...byType(r, 'FALSE_POSITIVE')]
   if (explained.length) {
-    const events = explained.flatMap((f) => f.evidence.related_events ?? []).map((e) => e.description.charAt(0).toLowerCase() + e.description.slice(1))
+    // Quoted as registered: the dataset may describe events in another language.
+    const events = explained.flatMap((f) => f.evidence.related_events ?? []).map((e) => `«${e.description}»`)
     out.push(
       `Los cambios de ${ids(explained)} se explican por eventos operativos registrados y no requieren escalamiento` +
         (events.length ? `: ${joinEs(events)}.` : '.'),
@@ -44,7 +45,7 @@ export function consumptionHeadline(r: Report): string {
   const s = r.summary
   const top = [...r.contributions].filter((c) => c.delta_kwh > 0).sort((a, b) => b.delta_kwh - a.delta_kwh).slice(0, 2)
   const who = top.length ? ` El aumento viene sobre todo de ${joinEs(top.map((c) => c.meter_id))}.` : ''
-  return `La planta consumió ${fmtNum(s.current_kwh)} kWh en 7 días, ${fmtPct(s.variation_pct)} frente a su baseline.${who}`
+  return `En las últimas 24 h la planta consumió ${fmtNum(s.current_kwh)} kWh, ${fmtPct(s.variation_pct)} frente a su baseline diario.${who}`
 }
 
 /** Headline of section 03: count of findings by class. */

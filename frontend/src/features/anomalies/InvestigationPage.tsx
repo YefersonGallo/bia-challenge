@@ -142,7 +142,7 @@ export function InvestigationPage() {
           <Comparison a={a} color={meta.color} />
 
           <Panel className="flex flex-col gap-1 px-4 py-3.5">
-            <Label>VARIABLES QUE CAMBIARON · DÍAS 1–7 → DÍAS 8–14</Label>
+            <Label>VARIABLES QUE CAMBIARON · BASELINE (DÍAS 1–7) → {ev.onset_day ? `DESDE EL DÍA ${ev.onset_day}` : 'ÚLTIMAS 24 H'}</Label>
             <table className="w-full border-collapse text-left">
               <tbody>
                 {(ev.variables ?? []).map((v) => (
@@ -200,7 +200,7 @@ export function InvestigationPage() {
                   </li>
                 ))}
                 <li className="pt-1 font-mono text-[11px] text-muted">
-                  {ev.persistent_hours} h fuera de banda · coherencia física {fmtNum(ev.physical_coherence * 100)}% · {ev.invalid_readings} lecturas inválidas
+                  {ev.persistent_hours} h de duración · relación kWh / V·I·PF coherente en el {fmtNum(ev.physical_coherence * 100)}% · {ev.invalid_readings} lecturas inconsistentes
                 </li>
               </ul>
             )}

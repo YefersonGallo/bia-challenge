@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMeter, useMeters } from '@/shared/api/queries'
+import type { MeterDetail } from '@/shared/api/types'
 import { DailyChart } from '@/shared/charts/DailyChart'
 import { HourlyChart } from '@/shared/charts/small'
 import { fmtConf, fmtDayHour, fmtNum, fmtPct } from '@/shared/lib/format'
@@ -9,6 +10,18 @@ import { meterVerdict } from '@/shared/lib/verdict'
 import { Button, ErrorBox, KpiStrip, Label, Loading, Panel, Tag } from '@/shared/ui/primitives'
 import { useAnalysis } from '@/features/analysis/useAnalysis'
 import { toMeterQuery, useMeterFilters } from './filtersStore'
+
+/** Human summary of the kinds of suspicious readings of a meter. */
+function qualityBreakdown(s: MeterDetail['stats']): string {
+  const parts = [
+    s.voltage_anomalies && `${s.voltage_anomalies} con voltaje anómalo`,
+    s.pf_jumps && `${s.pf_jumps} saltos de factor de potencia`,
+    s.incoherent_readings && `${s.incoherent_readings} donde kWh no cuadra con V·I·PF`,
+    s.pf_out_of_range && `${s.pf_out_of_range} con FP fuera de [0,1]`,
+    s.zero_voltage && `${s.zero_voltage} con 0 V`,
+  ].filter(Boolean)
+  return parts.join(' · ')
+}
 
 /** Meter detail: KPIs, daily and hourly charts, AI verdict, events and data quality. */
 export function MeterDetailPage() {
@@ -40,7 +53,7 @@ export function MeterDetailPage() {
         <span className="flex flex-col">
           <span className="text-base font-semibold">{m.name}</span>
           <span className="text-xs text-muted">
-            {m.location} · {zoneOf(m.location)}
+            {m.location === zoneOf(m.location) ? m.location : `${m.location} · ${zoneOf(m.location)}`}
           </span>
         </span>
         <Tag color={st.color} outline>
@@ -64,20 +77,20 @@ export function MeterDetailPage() {
 
       <KpiStrip
         items={[
-          { label: 'KWH ÚLTIMOS 7 DÍAS', value: fmtNum(m.current_kwh), sub: `baseline ${fmtNum(m.baseline_kwh)} kWh` },
+          { label: 'KWH ÚLTIMAS 24 H', value: fmtNum(m.current_kwh), sub: `baseline ${fmtNum(m.baseline_kwh)} kWh/día · periodo ${fmtNum(m.period_kwh)} kWh` },
           { label: 'VARIACIÓN', value: fmtPct(m.variation_pct), color: Math.abs(m.variation_pct) >= 25 ? v.color : undefined, sub: m.status_reason },
-          { label: 'CONSUMO NOCTURNO', value: `${fmtNum(m.stats.night_ratio, 1)}×`, sub: 'frente al baseline (00–06 h)' },
+          { label: 'CONSUMO NOCTURNO', value: `${fmtNum(m.stats.night_ratio, 1)}×`, sub: 'últimas 24 h frente al baseline (22–06 h)' },
           {
-            label: 'LECTURAS INVÁLIDAS',
+            label: 'LECTURAS INCONSISTENTES',
             value: fmtNum(m.invalid_readings),
             color: m.invalid_readings > 0 ? 'var(--color-data)' : undefined,
-            sub: `${m.stats.pf_out_of_range} PF fuera de rango · ${m.stats.zero_voltage} con 0 V`,
+            sub: qualityBreakdown(m.stats) || 'ninguna',
           },
           {
             label: 'COHERENCIA FÍSICA',
             value: `${fmtNum(coherence * 100)}%`,
             color: coherence < 0.9 ? 'var(--color-data)' : undefined,
-            sub: 'kWh ≈ V·I·PF (±10%)',
+            sub: 'relación kWh / V·I·PF estable',
           },
         ]}
       />
@@ -93,11 +106,11 @@ export function MeterDetailPage() {
           </Panel>
           <div className="grid gap-3 lg:grid-cols-2">
             <Panel className="flex flex-col gap-2 px-4 py-3.5">
-              <Label>PERFIL HORARIO · KWH/H · BASELINE (--) VS DÍAS 8–14</Label>
+              <Label>PERFIL HORARIO · KWH/H · BASELINE (--) VS ÚLTIMAS 24 H</Label>
               <HourlyChart baseline={m.stats.hourly_baseline} current={m.stats.hourly_current} color={v.color} />
             </Panel>
             <Panel className="flex flex-col gap-2 px-4 py-3.5">
-              <Label>VARIABLES ELÉCTRICAS · DÍAS 1–7 → DÍAS 8–14</Label>
+              <Label>VARIABLES ELÉCTRICAS · DÍAS 1–7 → {ep ? 'VENTANA DEL CAMBIO' : 'ÚLTIMAS 24 H'}</Label>
               {electricalRows(m.stats).map((e) => (
                 <div key={e.label} className="flex items-baseline justify-between border-b border-line pb-2">
                   <span className="font-mono text-[10px] text-muted">{e.label}</span>
@@ -162,9 +175,9 @@ export function MeterDetailPage() {
             <span className="text-[13px] text-ink-2">
               {m.invalid_readings === 0
                 ? 'Todas las lecturas son físicamente posibles.'
-                : `${m.invalid_readings} lecturas inválidas: ${m.stats.pf_out_of_range} con factor de potencia fuera de [0,1] y ${m.stats.zero_voltage} con 0 V y consumo positivo.`}
+                : `${m.invalid_readings} lecturas físicamente inconsistentes${m.stats.issue_onset ? ` desde ${fmtDayHour(m.stats.issue_onset)}` : ''}: ${qualityBreakdown(m.stats)}.`}
             </span>
-            <span className="font-mono text-[11px] text-muted">coherencia kWh ≈ V·I·PF: {fmtNum(coherence * 100)}% de las lecturas</span>
+            <span className="font-mono text-[11px] text-muted">relación kWh / V·I·PF coherente en el {fmtNum(coherence * 100)}% de las lecturas</span>
           </Panel>
         </div>
       </div>

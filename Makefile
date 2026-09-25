@@ -6,7 +6,7 @@ help: ## List the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
 # --- local development -------------------------------------------------------
-.PHONY: install dev-api dev-web gendata
+.PHONY: install dev-api dev-web gendata analyze
 install: ## Install frontend dependencies and download Go modules
 	cd backend && go mod download
 	cd frontend && npm ci
@@ -17,8 +17,11 @@ dev-api: ## Run the API with the in-memory store (http://localhost:8080)
 dev-web: ## Run the SPA with Vite, proxying /api to :8080 (http://localhost:5173)
 	cd frontend && npm run dev
 
-gendata: ## Regenerate the synthetic dataset in backend/data
-	cd backend && go run ./cmd/gendata -out data
+gendata: ## Write the synthetic test dataset to backend/data-synthetic
+	cd backend && go run ./cmd/gendata -out data-synthetic
+
+analyze: ## Run the engine over backend/data and print the findings (challenge JSON format)
+	cd backend && go run ./cmd/analyze -data data -v
 
 # --- quality -------------------------------------------------------------------
 .PHONY: test test-backend test-frontend lint

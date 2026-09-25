@@ -14,7 +14,9 @@ describe('InvestigationPage', () => {
     expect(await screen.findByRole('heading', { name: 'M-109' })).toBeInTheDocument()
     expect(screen.getByText(/prioridad 1 de 4/)).toBeInTheDocument()
     expect(screen.getByText('Investigar medidor e instalación.')).toBeInTheDocument()
-    expect(screen.getByText(/Ninguno en ±24 h del cambio/)).toBeInTheDocument()
+    // The only record near the onset is an UNKNOWN event, which does not explain the change.
+    expect(screen.getByText('No operational event reported')).toBeInTheDocument()
+    expect(screen.getByText(/no explica la dirección del cambio/)).toBeInTheDocument()
     expect(screen.getByText('Corriente media')).toBeInTheDocument()
   })
 
@@ -23,7 +25,7 @@ describe('InvestigationPage', () => {
     renderWithProviders(<InvestigationPage />, { route: `/anomalies/${m109.id}`, path: '/anomalies/:id' })
 
     await userEvent.click(await screen.findByRole('button', { name: 'HORARIO' }))
-    expect(screen.getByText(/De noche consume 2,6×/)).toBeInTheDocument()
+    expect(screen.getByText(/De noche consume 2,1×/)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'VER JSON' }))
     const json = JSON.parse(screen.getByLabelText('Salida IA en JSON').textContent!)

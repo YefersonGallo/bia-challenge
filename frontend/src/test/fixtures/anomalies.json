@@ -1,15 +1,15 @@
 [
  {
-  "id": "A-0924-1856-a133-M-109",
-  "analysis_id": "A-0924-1856-a133",
+  "id": "A-0925-0249-4ff1-M-109",
+  "analysis_id": "A-0925-0249-4ff1",
   "meter_id": "M-109",
-  "detected_at": "2026-09-24T18:56:22.198304575Z",
+  "detected_at": "2026-09-25T02:49:35.081650533Z",
   "type": "REAL_ANOMALY",
   "severity": "HIGH",
   "confidence": 0.97,
   "priority_score": 1,
   "rank": 1,
-  "reason": "Consumo +103,1% por encima del baseline sin evento conocido; factor de potencia de 0,93 a 0,81.",
+  "reason": "Consumo +110,7% por encima del baseline sin evento conocido; factor de potencia de 0,94 a 0,74.",
   "recommended_action": "Investigar medidor e instalación.",
   "next_steps": [
    "Inspeccionar en sitio el equipo de Compresor línea 3",
@@ -21,172 +21,208 @@
   "evidence": {
    "meter_id": "M-109",
    "meter_name": "Compresor línea 3",
-   "baseline_kwh": 1070.7,
-   "current_kwh": 2174.6,
-   "variation_pct": 103.1,
-   "onset_day": 8,
+   "baseline_kwh": 1047.7,
+   "current_kwh": 2207.6,
+   "variation_pct": 110.7,
+   "onset_day": 12,
    "end_day": 14,
-   "persistent_hours": 168,
-   "night_ratio": 2.62,
+   "persistent_hours": 58,
+   "night_ratio": 2.08,
    "invalid_readings": 0,
    "physical_coherence": 1,
    "signals": [
     {
      "code": "PERSISTENT_SHIFT",
-     "description": "168 h seguidas fuera de la banda (±25%) desde el día 8",
-     "value": 168
+     "description": "58 h por encima de la banda (±25%) desde el día 12 a las 14:00, con desvío medio de +110,4%",
+     "value": 58
     },
     {
      "code": "NO_EVENT",
-     "description": "Ningún evento operativo en ±24 h del inicio del cambio",
+     "description": "El registro de ±24 h no explica el cambio: «No operational event reported» (UNKNOWN)",
      "value": 0
     },
     {
-     "code": "NIGHT_PATTERN",
-     "description": "Consumo nocturno 2,6× el baseline",
-     "value": 2.62
+     "code": "CURRENT_RISE",
+     "description": "Corriente media de 200 a 425 A (+111,9%)",
+     "value": 111.9
     },
     {
      "code": "PF_DROP",
-     "description": "Factor de potencia de 0,93 a 0,81",
-     "value": 0.12
+     "description": "Factor de potencia de 0,94 a 0,74",
+     "value": 0.2
     },
     {
-     "code": "CURRENT_RISE",
-     "description": "Corriente media +137,4%",
-     "value": 137.4
+     "code": "RELATION_SHIFT",
+     "description": "La relación entre consumo y V·I·PF cambió +29,2%: el equipo no se comporta como antes",
+     "value": 29.2
+    },
+    {
+     "code": "NIGHT_PATTERN",
+     "description": "Consumo nocturno 2,1× el baseline",
+     "value": 2.08
+    },
+    {
+     "code": "SPIKES",
+     "description": "1 pico aislado (|z| > 3,5)",
+     "value": 1
     }
    ],
    "variables": [
     {
-     "name": "Consumo (7 días)",
+     "name": "Consumo diario",
      "unit": "kWh",
-     "baseline": 1070.7,
-     "current": 2174.6,
-     "delta_pct": 103.1
+     "baseline": 1047.7,
+     "current": 2226.54,
+     "delta_pct": 112.5
     },
     {
      "name": "Corriente media",
      "unit": "A",
-     "baseline": 31.15,
-     "current": 73.96,
-     "delta_pct": 137.4
+     "baseline": 200.46,
+     "current": 424.7,
+     "delta_pct": 111.9
     },
     {
      "name": "Factor de potencia",
      "unit": "",
-     "baseline": 0.93,
-     "current": 0.81,
-     "delta_pct": -12.9
+     "baseline": 0.939,
+     "current": 0.74,
+     "delta_pct": -21.2
     },
     {
      "name": "Voltaje medio",
      "unit": "V",
-     "baseline": 220.1,
-     "current": 216,
-     "delta_pct": -1.9
+     "baseline": 219.9,
+     "current": 216.9,
+     "delta_pct": -1.4
     }
    ],
-   "related_events": null,
+   "related_events": [
+    {
+     "id": "EV-003",
+     "meter_id": "M-109",
+     "timestamp": "2026-09-12T14:00:00Z",
+     "type": "UNKNOWN",
+     "description": "No operational event reported"
+    }
+   ],
+   "shift_pct": 110.4,
+   "onset": "2026-09-12T14:00:00Z",
    "event_explains_shift": false
   }
  },
  {
-  "id": "A-0924-1856-a133-M-112",
-  "analysis_id": "A-0924-1856-a133",
+  "id": "A-0925-0249-4ff1-M-112",
+  "analysis_id": "A-0925-0249-4ff1",
   "meter_id": "M-112",
-  "detected_at": "2026-09-24T18:56:22.198308161Z",
+  "detected_at": "2026-09-25T02:49:35.081675534Z",
   "type": "DATA_QUALITY",
   "severity": "HIGH",
   "confidence": 0.97,
-  "priority_score": 0.757,
+  "priority_score": 0.924,
   "rank": 2,
-  "reason": "El consumo es estable (−1,3%), pero 25 lecturas son físicamente imposibles; el problema está en la medición.",
+  "reason": "El consumo es estable (+0,5%), pero hay 17 lecturas físicamente inconsistentes (saltos de voltaje y de factor de potencia que no cuadran con el consumo); el problema está en la medición, no en la carga.",
   "recommended_action": "Validar medidor y telemetría.",
   "next_steps": [
    "Revisar transformadores de corriente y de potencial",
    "Validar comunicación y firmware del medidor",
-   "Excluir las lecturas inválidas hasta recalibrar"
+   "Excluir las lecturas inconsistentes hasta recalibrar"
   ],
   "explained_by": "template",
   "status": "OPEN",
   "evidence": {
    "meter_id": "M-112",
    "meter_name": "Subestación B",
-   "baseline_kwh": 699.4,
-   "current_kwh": 690.3,
-   "variation_pct": -1.3,
-   "persistent_hours": 168,
-   "night_ratio": 0.99,
-   "invalid_readings": 25,
-   "physical_coherence": 0.871,
+   "baseline_kwh": 659.5,
+   "current_kwh": 662.7,
+   "variation_pct": 0.5,
+   "onset_day": 13,
+   "persistent_hours": 46,
+   "night_ratio": 1.03,
+   "invalid_readings": 17,
+   "physical_coherence": 0.961,
    "signals": [
     {
-     "code": "PF_OUT_OF_RANGE",
-     "description": "19 lecturas con factor de potencia mayor a 1",
-     "value": 19
+     "code": "VOLTAGE_JUMPS",
+     "description": "16 lecturas con voltaje fuera de ±6% del habitual (202–241 V)",
+     "value": 16
     },
     {
-     "code": "ZERO_VOLTAGE",
-     "description": "6 horas con 0 V y consumo positivo",
-     "value": 6
+     "code": "PF_JUMPS",
+     "description": "12 saltos bruscos del factor de potencia (0,58–0,98)",
+     "value": 12
     },
     {
      "code": "INCOHERENT_READINGS",
-     "description": "kWh no cuadra con V·I·PF en el 13% de las lecturas",
-     "value": 12.9
+     "description": "13 lecturas donde el consumo no cuadra con V·I·PF",
+     "value": 13
     },
     {
      "code": "STABLE_CONSUMPTION",
-     "description": "Consumo estable (−1,3%): no es un cambio de carga",
-     "value": -1.3
+     "description": "Consumo estable (+0,5%): no es un cambio de carga",
+     "value": 0.5
+    },
+    {
+     "code": "DQ_EVENT",
+     "description": "Registro operativo: «Intermittent readings and abnormal electrical jumps» (13/09 00:00)",
+     "value": 1
     }
    ],
    "variables": [
     {
-     "name": "Consumo (7 días)",
+     "name": "Consumo diario",
      "unit": "kWh",
-     "baseline": 699.4,
-     "current": 690.3,
-     "delta_pct": -1.3
+     "baseline": 659.5,
+     "current": 668.91,
+     "delta_pct": 1.4
     },
     {
      "name": "Corriente media",
      "unit": "A",
-     "baseline": 21.51,
-     "current": 21.14,
-     "delta_pct": -1.7
+     "baseline": 125.72,
+     "current": 124.42,
+     "delta_pct": -1
     },
     {
      "name": "Factor de potencia",
      "unit": "",
-     "baseline": 0.92,
-     "current": 0.92,
-     "delta_pct": 0
+     "baseline": 0.951,
+     "current": 0.944,
+     "delta_pct": -0.7
     },
     {
      "name": "Voltaje medio",
      "unit": "V",
-     "baseline": 219.9,
-     "current": 220,
-     "delta_pct": 0
+     "baseline": 221,
+     "current": 222.5,
+     "delta_pct": 0.7
     }
    ],
-   "related_events": null,
+   "related_events": [
+    {
+     "id": "EV-004",
+     "meter_id": "M-112",
+     "timestamp": "2026-09-13T00:00:00Z",
+     "type": "DATA_QUALITY",
+     "description": "Intermittent readings and abnormal electrical jumps"
+    }
+   ],
+   "shift_pct": 0,
+   "onset": "2026-09-13T00:00:00Z",
    "event_explains_shift": false
   }
  },
  {
-  "id": "A-0924-1856-a133-M-104",
-  "analysis_id": "A-0924-1856-a133",
+  "id": "A-0925-0249-4ff1-M-104",
+  "analysis_id": "A-0925-0249-4ff1",
   "meter_id": "M-104",
-  "detected_at": "2026-09-24T18:56:22.19831282Z",
+  "detected_at": "2026-09-25T02:49:35.08167892Z",
   "type": "EXPLAINABLE_ANOMALY",
   "severity": "MEDIUM",
   "confidence": 0.87,
   "priority_score": 0.056,
   "rank": 3,
-  "reason": "Aumento de +46,6% que coincide con arranque de la nueva línea productiva 2B; la relación eléctrica se mantiene sana.",
+  "reason": "Aumento de +47,4% que coincide con el evento registrado «New production line activated»; la relación eléctrica se mantiene sana.",
   "recommended_action": "Validar con operación y actualizar el baseline.",
   "next_steps": [
    "Confirmar con Producción que la carga nueva es la esperada",
@@ -197,85 +233,87 @@
   "evidence": {
    "meter_id": "M-104",
    "meter_name": "Línea de ensamble 2",
-   "baseline_kwh": 1260.3,
-   "current_kwh": 1848.2,
-   "variation_pct": 46.6,
-   "onset_day": 8,
+   "baseline_kwh": 1170.3,
+   "current_kwh": 1725.6,
+   "variation_pct": 47.4,
+   "onset_day": 11,
    "end_day": 14,
-   "persistent_hours": 168,
-   "night_ratio": 1.48,
+   "persistent_hours": 96,
+   "night_ratio": 1.46,
    "invalid_readings": 0,
    "physical_coherence": 1,
    "signals": [
     {
      "code": "PERSISTENT_SHIFT",
-     "description": "168 h seguidas fuera de la banda (±25%) desde el día 8",
-     "value": 168
+     "description": "96 h por encima de la banda (±25%) desde el día 11 a las 00:00, con desvío medio de +46,5%",
+     "value": 96
     },
     {
      "code": "EVENT_COHERENT",
-     "description": "Evento coherente: Arranque de la nueva línea productiva 2B (08/09 06:00)",
+     "description": "Evento coherente con el cambio: «New production line activated» (11/09 00:00)",
      "value": 1
     },
     {
      "code": "HEALTHY_ELECTRICAL",
-     "description": "Relación eléctrica sana: factor de potencia 0,92",
-     "value": 0.92
+     "description": "Relación eléctrica sana: la corriente acompaña al consumo y el factor de potencia se mantiene en 0,89",
+     "value": 0.89
     }
    ],
    "variables": [
     {
-     "name": "Consumo (7 días)",
+     "name": "Consumo diario",
      "unit": "kWh",
-     "baseline": 1260.3,
-     "current": 1848.2,
-     "delta_pct": 46.6
+     "baseline": 1170.3,
+     "current": 1714.71,
+     "delta_pct": 46.5
     },
     {
      "name": "Corriente media",
      "unit": "A",
-     "baseline": 37.08,
-     "current": 54.35,
-     "delta_pct": 46.6
+     "baseline": 219.13,
+     "current": 322.88,
+     "delta_pct": 47.3
     },
     {
      "name": "Factor de potencia",
      "unit": "",
-     "baseline": 0.92,
-     "current": 0.92,
-     "delta_pct": 0
+     "baseline": 0.91,
+     "current": 0.89,
+     "delta_pct": -2.2
     },
     {
      "name": "Voltaje medio",
      "unit": "V",
-     "baseline": 220,
-     "current": 220,
-     "delta_pct": 0
+     "baseline": 219.9,
+     "current": 220.1,
+     "delta_pct": 0.1
     }
    ],
    "related_events": [
     {
      "id": "EV-001",
      "meter_id": "M-104",
-     "timestamp": "2026-09-08T06:00:00Z",
-     "type": "PRODUCTION_LINE_START",
-     "description": "Arranque de la nueva línea productiva 2B"
+     "timestamp": "2026-09-11T00:00:00Z",
+     "type": "OPERATIONAL_CHANGE",
+     "description": "New production line activated"
     }
    ],
+   "shift_pct": 46.5,
+   "onset": "2026-09-11T00:00:00Z",
    "event_explains_shift": true
   }
  },
  {
-  "id": "A-0924-1856-a133-M-106",
-  "analysis_id": "A-0924-1856-a133",
+  "id": "A-0925-0249-4ff1-M-106",
+  "analysis_id": "A-0925-0249-4ff1",
   "meter_id": "M-106",
-  "detected_at": "2026-09-24T18:56:22.198316836Z",
+  "detected_at": "2026-09-25T02:49:35.081683308Z",
   "type": "FALSE_POSITIVE",
   "severity": "LOW",
   "confidence": 0.84,
-  "priority_score": 0.009,
+  "priority_score": 0.012,
   "rank": 4,
-  "reason": "La variación de −36,7% corresponde a parada programada de mantenimiento del horno (72 h) y el consumo volvió a su nivel al terminar.",
+  "reason": "La caída de −79,9% durante 12 h coincide con el evento registrado «Scheduled maintenance outage for 12 hours», y el consumo volvió a su nivel al terminar.",
   "recommended_action": "No escalar.",
   "next_steps": [
    "Excluir la ventana del evento del cálculo del baseline"
@@ -285,76 +323,78 @@
   "evidence": {
    "meter_id": "M-106",
    "meter_name": "Horno industrial",
-   "baseline_kwh": 884.5,
-   "current_kwh": 560.1,
-   "variation_pct": -36.7,
-   "onset_day": 10,
-   "end_day": 12,
-   "persistent_hours": 72,
-   "night_ratio": 0.98,
+   "baseline_kwh": 1347,
+   "current_kwh": 1362.1,
+   "variation_pct": 1.1,
+   "onset_day": 8,
+   "end_day": 8,
+   "persistent_hours": 12,
+   "night_ratio": 0.99,
    "invalid_readings": 0,
    "physical_coherence": 1,
    "signals": [
     {
      "code": "PERSISTENT_SHIFT",
-     "description": "72 h seguidas fuera de la banda (±25%) desde el día 10",
-     "value": 72
+     "description": "12 h por debajo de la banda (±25%) desde el día 8 a las 00:00, con desvío medio de −79,9%",
+     "value": 12
     },
     {
      "code": "EVENT_COHERENT",
-     "description": "Evento coherente: Parada programada de mantenimiento del horno (72 h) (10/09 00:00)",
+     "description": "Evento coherente con el cambio: «Scheduled maintenance outage for 12 hours» (08/09 00:00)",
      "value": 1
     },
     {
      "code": "RECOVERED",
-     "description": "Recuperación completa después del día 12",
+     "description": "El consumo volvió a su nivel al terminar el evento (08/09 12:00)",
      "value": 12
     },
     {
      "code": "HEALTHY_ELECTRICAL",
-     "description": "Relación eléctrica sana: factor de potencia 0,92",
-     "value": 0.92
+     "description": "Relación eléctrica sana: la corriente acompaña al consumo y el factor de potencia se mantiene en 0,91",
+     "value": 0.914
     }
    ],
    "variables": [
     {
-     "name": "Consumo (7 días)",
+     "name": "Consumo diario",
      "unit": "kWh",
-     "baseline": 884.5,
-     "current": 560.1,
-     "delta_pct": -36.7
+     "baseline": 1347,
+     "current": 252.8,
+     "delta_pct": -81.2
     },
     {
      "name": "Corriente media",
      "unit": "A",
-     "baseline": 26,
-     "current": 16.48,
-     "delta_pct": -36.6
+     "baseline": 257.4,
+     "current": 48.04,
+     "delta_pct": -81.3
     },
     {
      "name": "Factor de potencia",
      "unit": "",
-     "baseline": 0.92,
-     "current": 0.92,
-     "delta_pct": 0
+     "baseline": 0.921,
+     "current": 0.914,
+     "delta_pct": -0.8
     },
     {
      "name": "Voltaje medio",
      "unit": "V",
-     "baseline": 220.1,
-     "current": 220,
-     "delta_pct": 0
+     "baseline": 220,
+     "current": 219.2,
+     "delta_pct": -0.4
     }
    ],
    "related_events": [
     {
      "id": "EV-002",
      "meter_id": "M-106",
-     "timestamp": "2026-09-10T00:00:00Z",
-     "type": "SCHEDULED_SHUTDOWN",
-     "description": "Parada programada de mantenimiento del horno (72 h)"
+     "timestamp": "2026-09-08T00:00:00Z",
+     "type": "SCHEDULED_OUTAGE",
+     "description": "Scheduled maintenance outage for 12 hours"
     }
    ],
+   "shift_pct": -79.9,
+   "onset": "2026-09-08T00:00:00Z",
    "event_explains_shift": true
   }
  }

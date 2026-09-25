@@ -97,6 +97,7 @@ type MeterSummary struct {
 	domain.Meter
 	Status          domain.MeterStatus `json:"status"`
 	StatusReason    string             `json:"status_reason"`
+	PeriodKWh       float64            `json:"period_kwh"`
 	BaselineKWh     float64            `json:"baseline_kwh"`
 	CurrentKWh      float64            `json:"current_kwh"`
 	VariationPct    float64            `json:"variation_pct"`
@@ -134,7 +135,7 @@ func summarize(m domain.Meter, st analysis.MeterStats, a *domain.Anomaly) MeterS
 		daily[i] = d.KWh
 	}
 	ms := MeterSummary{
-		Meter: m, Status: st.Status, StatusReason: st.StatusReason, BaselineKWh: st.BaselineKWh, CurrentKWh: st.CurrentKWh,
+		Meter: m, Status: st.Status, StatusReason: st.StatusReason, PeriodKWh: st.PeriodKWh, BaselineKWh: st.BaselineKWh, CurrentKWh: st.CurrentKWh,
 		VariationPct: st.VariationPct, InvalidReadings: st.InvalidReadings, Daily: daily,
 	}
 	if a != nil {
@@ -508,6 +509,8 @@ func (s *Service) Run(ctx context.Context, id string) (domain.AnalysisRun, error
 type Summary struct {
 	Meters         int                        `json:"meters"`
 	StatusCounts   map[domain.MeterStatus]int `json:"status_counts"`
+	PeriodKWh      float64                    `json:"period_kwh"`
+	PeriodDays     int                        `json:"period_days"`
 	CurrentKWh     float64                    `json:"current_kwh"`
 	BaselineKWh    float64                    `json:"baseline_kwh"`
 	VariationPct   float64                    `json:"variation_pct"`
@@ -537,9 +540,11 @@ func (s *Service) DashboardSummary(ctx context.Context) (Summary, error) {
 		out.CurrentKWh += st.CurrentKWh
 		out.BaselineKWh += st.BaselineKWh
 		out.InvalidReading += st.InvalidReadings
-		out.Readings += len(st.Days) * 24
+		out.Readings += st.Readings
+		out.PeriodKWh += st.PeriodKWh
+		out.PeriodDays = max(out.PeriodDays, len(st.Days))
 	}
-	out.CurrentKWh, out.BaselineKWh = round1(out.CurrentKWh), round1(out.BaselineKWh)
+	out.CurrentKWh, out.BaselineKWh, out.PeriodKWh = round1(out.CurrentKWh), round1(out.BaselineKWh), round1(out.PeriodKWh)
 	if out.BaselineKWh > 0 {
 		out.VariationPct = round1((out.CurrentKWh/out.BaselineKWh - 1) * 100)
 	}

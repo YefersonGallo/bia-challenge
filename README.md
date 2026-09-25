@@ -8,14 +8,16 @@ La pregunta que responde la aplicación es: **qué medidor revisar primero, y po
 Login → Operación (dashboard) → M-109 → Run AI Analysis → Anomalía → Investigación → Acción → Reporte IA
 ```
 
-| Medidor | Caso | Veredicto del motor | Prioridad |
-|---|---|---|---|
-| M-109 | +103 % sin evento, corriente +137 %, PF 0,93 → 0,81 | `REAL_ANOMALY` · `HIGH` · conf 0,97 | **P1** |
-| M-112 | Consumo estable, 25 lecturas físicamente imposibles | `DATA_QUALITY` · `HIGH` · conf 0,97 | P2 |
-| M-104 | +47 % desde el arranque de una nueva línea (D8 06:00) | `EXPLAINABLE_ANOMALY` · `MEDIUM` | P3 |
-| M-106 | −37 % durante una parada programada (D10–D12) | `FALSE_POSITIVE` · `LOW` (`anomaly: false`) | P4 |
+Resultado sobre los **CSV oficiales** de la prueba (`backend/data`):
 
-Los otros 8 medidores quedan en estado normal: no hay falsos positivos.
+| Medidor | Qué encuentra el motor | Veredicto | Prioridad |
+|---|---|---|---|
+| M-109 | +110,7 % desde el día 12 14:00; corriente 200 → 425 A, PF 0,94 → 0,74; el único registro es `UNKNOWN` | `REAL_ANOMALY` · `HIGH` · conf 0,97 | **P1** |
+| M-112 | Consumo estable (+0,5 %), pero desde el día 13 hay 17 lecturas inconsistentes: voltaje 202–241 V y saltos de FP | `DATA_QUALITY` · `HIGH` · conf 0,97 | P2 |
+| M-104 | +47,4 % desde el día 11 00:00, coherente con «New production line activated» | `EXPLAINABLE_ANOMALY` · `MEDIUM` · conf 0,87 | P3 |
+| M-106 | −80 % durante 12 h el día 8 y recuperación, coherente con «Scheduled maintenance outage» | `FALSE_POSITIVE` · `LOW` (`anomaly: false`) | P4 |
+
+Los otros 8 medidores quedan en estado normal: no hay falsos positivos. Para verlo sin levantar nada: `cd backend && go run ./cmd/analyze -data data -v`.
 
 ---
 
@@ -104,7 +106,8 @@ Solo se usa la librería estándar (`net/http` con el enrutado por patrones de G
 ```
 backend/
   cmd/api          servidor HTTP (config por env, seed, graceful shutdown, healthcheck)
-  cmd/gendata      genera el dataset sintético determinista
+  cmd/gendata      genera el dataset sintético determinista (tests)
+  cmd/analyze      corre el motor sobre una carpeta de CSV e imprime los hallazgos
   internal/domain  entidades, enums y máquina de estados de la anomalía
   internal/analysis  motor de anomalías (sin IO)
   internal/explain   Explainer: Claude, validación y plantilla
@@ -124,23 +127,31 @@ frontend/src/
 
 La técnica es híbrida: la estadística robusta y las reglas de dominio **deciden**, y el LLM **redacta**. El tipo, la severidad, la confianza, la prioridad y cada cifra salen del motor. Claude solo convierte esa evidencia en lenguaje natural.
 
-1. **Lecturas.** Se validan físicamente: PF fuera de [0, 1] o 0 V con consumo > 0 cuentan como lectura inválida. También se mide la coherencia `kWh ≈ V·I·PF/1000` (±10 %).
-2. **Baseline.** Mediana por hora del día de los días 1–7, más la MAD. Es robusto a picos y conserva el perfil diario.
-3. **Detección.**
-   - Desviación diaria contra el baseline; un episodio son los días fuera de ±25 %.
-   - Picos por z-score robusto (> 3,5).
-   - Patrón nocturno (consumo 00–06 h frente al baseline).
-4. **Correlación eléctrica.** Cambios de corriente, voltaje y factor de potencia entre la ventana base y la actual.
-5. **Eventos.** Se cruza cada episodio con los eventos a ±24 h de su inicio, y el evento solo cuenta si su dirección es coherente: arranque ↔ aumento, parada ↔ caída.
-6. **Clasificación.** El árbol de decisión aplica un orden fijo:
-   1. **Calidad de datos**: ≥ 5 lecturas inválidas o coherencia < 90 % → `DATA_QUALITY`.
-   2. **Evento coherente**: si es una parada → `FALSE_POSITIVE`/`LOW`; si no → `EXPLAINABLE_ANOMALY`/`MEDIUM`.
-   3. **Magnitud**: `REAL_ANOMALY`, con severidad `HIGH` si > 50 % o si hay señales eléctricas.
-7. **Prioridad y confianza.**
-   - `prioridad = peso(severidad) × magnitud × persistencia × (1 − 0,8 si un evento lo explica)`.
+1. **Lecturas.** Cada lectura se valida contra el propio medidor y cuenta como **inconsistente** si:
+   - es imposible: PF fuera de [0, 1], o 0 V con consumo;
+   - el voltaje se aparta más de ±6 % del habitual del medidor;
+   - el FP salta más de 0,15 frente a sus lecturas vecinas (ventana de 7 h);
+   - la relación `kWh / (V·I·PF)` se aparta más de ±25 % de la propia del medidor **y** de la de sus vecinas.
+
+   La última condición es la clave: un cambio de régimen sostenido, como el de M-109, no se confunde con un error de datos.
+2. **Baseline.** Mediana por hora del día de los días 1–7, más la MAD, sobre lecturas plausibles. Su suma es el **consumo esperado de un día**.
+3. **Estado actual.** Consumo de las **últimas 24 h** frente al baseline diario. Es la cifra del ejemplo de la prueba («M-109 · 2.180 kWh · baseline ≈ 1.070 · +103,7 %»).
+4. **Detección.** A partir del día 8, la desviación de cada hora contra su hora del baseline. Un **episodio** es una racha de al menos 6 h fuera de ±25 % (se toleran huecos de 2 h), con inicio, fin y recuperación. Así se detectan cambios que empiezan a mitad de semana (M-104 el día 11, M-109 el día 12) y paradas cortas (M-106, 12 h), que un promedio semanal diluiría. También se calculan picos por z-score robusto (> 3,5) y el patrón nocturno.
+5. **Correlación eléctrica.** Corriente, voltaje, PF y la relación `kWh / (V·I·PF)`, comparando el baseline con la ventana del episodio.
+6. **Eventos.** Se cruza cada episodio con los eventos a ±24 h de su inicio, y el evento solo cuenta si su dirección es coherente: arranque o cambio operativo ↔ aumento, parada ↔ caída.
+   - Un registro `UNKNOWN` («No operational event reported») **no explica** nada.
+   - Un registro `DATA_QUALITY` refuerza la evidencia de medición.
+7. **Clasificación.** El árbol de decisión aplica un orden fijo:
+   1. **Calidad de datos**: ≥ 5 lecturas inconsistentes → `DATA_QUALITY`.
+   2. **Evento coherente**: si es una parada y el consumo se recupera → `FALSE_POSITIVE`/`LOW`; si no → `EXPLAINABLE_ANOMALY`/`MEDIUM`.
+   3. **Magnitud**: `REAL_ANOMALY`, con severidad `HIGH` si el desvío es > 50 % o hay señales eléctricas.
+8. **Prioridad y confianza.**
+   - `prioridad = peso(severidad) × magnitud × persistencia(h / 48) × (1 − 0,8 si un evento lo explica)`.
    - `confianza = clamp(0,5 + 0,07·señales + 0,2·fuerza, 0,5, 0,97)`.
 
-El orden importa. Un medidor con lecturas imposibles no se confunde con un cambio de carga, y un evento coherente descarta la alarma antes de asignar severidad.
+El orden importa. Un medidor con lecturas inconsistentes no se confunde con un cambio de carga, y un evento coherente descarta la alarma antes de asignar severidad.
+
+Los umbrales están en `analysis.DefaultConfig()` y el reporte los muestra en sus anexos. Los tests del motor corren sobre **dos datasets de forma distinta**: los CSV oficiales y un generador sintético con otros tiempos y otros tipos de error. En los dos deben salir los mismos cuatro veredictos, en el mismo orden.
 
 ### IA y explicabilidad (Claude)
 
@@ -201,7 +212,7 @@ make lint        # go vet, gofmt, oxlint, tsc
 ```
 
 - **Backend** (`go test -race ./...`):
-  - Motor: los 4 casos, el orden de prioridad, que no haya falsos positivos, y estadística.
+  - Motor: los 4 casos, el orden de prioridad y que no haya falsos positivos, sobre los CSV oficiales y sobre el dataset sintético; eventos `UNKNOWN`; estadística.
   - Explainer: mock HTTP de la API de Anthropic, rechazo de cifras no sustentadas y fallback.
   - Servicios, HTTP (auth, filtros, flujo de análisis, 404/409), CSV y dominio.
   - PostgreSQL: integración cuando existe `TEST_DATABASE_URL`; en CI corre con un servicio Postgres.
@@ -216,10 +227,10 @@ CI (GitHub Actions) ejecuta lint, tests y build de ambos proyectos y construye l
 
 ## Datos
 
-- **Aún no hay CSV reales**, así que `backend/data` contiene un **dataset sintético determinista**, generado con `make gendata` (semilla fija): 12 medidores × 14 días × 24 h = **4.032 lecturas**, con los 4 casos de la prueba y 2 eventos operativos.
-- **Para usar los datos oficiales**, basta con reemplazar `readings.csv` y `events.csv` en `backend/data`. `meters.csv` es opcional: si falta, los medidores se derivan de las lecturas.
-  - El lector tolera orden de columnas, alias, decimales con coma y varios formatos de fecha, y reporta los errores con número de línea.
-  - Los tipos de evento desconocidos se clasifican por palabras clave del tipo y la descripción (parada, arranque, reducción…).
+- **`backend/data`** contiene los CSV oficiales de la prueba: `readings.csv` (4.032 lecturas horarias de 12 medidores) y `events.csv` (4 registros).
+  - El lector acepta su formato (`event_timestamp`, `event_type`, sin columna `id`), además de columnas en otro orden, alias, decimales con coma y varios formatos de fecha. Reporta los errores con número de línea.
+  - `meters.csv` es un **catálogo de demo** con nombre y ubicación de cada medidor, porque el dataset solo trae `meter_id`. Es opcional: si falta, los medidores se derivan de las lecturas.
+- **`cmd/gendata`** genera un dataset sintético determinista con los 4 casos, pero con otros tiempos (cambios desde el día 8, parada de 72 h, PF > 1 y 0 V). Se usa en los tests para comprobar que el motor no está ajustado a un solo dataset.
 - **`expected_results.csv` no se usa en ningún punto.** El loader no lo lee; está en `.gitignore` y en `.dockerignore`, y no llega a la base, al prompt ni al usuario. Queda reservado al evaluador.
 
 ## Seguridad
@@ -235,6 +246,7 @@ CI (GitHub Actions) ejecuta lint, tests y build de ambos proyectos y construye l
 - **Ejecución asíncrona** del análisis, con estado por pasos persistido: la UI hace polling cada 400 ms.
 - **Límites**:
   - Con 14 días de datos, el baseline usa 7 y no captura estacionalidad semanal.
+  - Los eventos vienen en inglés y se citan tal como fueron registrados; Claude los traduce al redactar.
   - No hay topología eléctrica.
   - La autenticación es de demo: un único usuario configurado por entorno.
   - El checklist del plan en el reporte se guarda por navegador; el ciclo de vida de las anomalías sí se persiste en la API.

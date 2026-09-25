@@ -78,7 +78,14 @@ export function DailyChart({
       {markers.map((m) => (
         <g key={`${m.day}-${m.label}`}>
           <line x1={x(m.day)} x2={x(m.day)} y1={pad.t - 6} y2={height - pad.b} stroke={m.color ?? 'var(--color-expl)'} strokeDasharray="2 3" strokeWidth={1.2} />
-          <text x={x(m.day) + 5} y={pad.t - 2} fontSize="10" fontFamily="var(--font-mono)" fill={m.color ?? 'var(--color-expl)'}>
+          <text
+            x={x(m.day) + (x(m.day) > width * 0.6 ? -5 : 5)}
+            y={pad.t - 2}
+            textAnchor={x(m.day) > width * 0.6 ? 'end' : 'start'}
+            fontSize="10"
+            fontFamily="var(--font-mono)"
+            fill={m.color ?? 'var(--color-expl)'}
+          >
             {m.label}
           </text>
         </g>

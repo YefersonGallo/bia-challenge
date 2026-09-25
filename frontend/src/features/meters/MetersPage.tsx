@@ -64,7 +64,7 @@ export function MetersPage() {
       <div className="flex items-baseline gap-3.5">
         <h1 className="m-0 font-display text-2xl font-semibold tracking-[-0.01em]">Medidores</h1>
         <span className="label text-[11px]">
-          {data.length} MEDIDORES · KWH ÚLTIMOS 7 DÍAS VS BASELINE DÍAS 1–7
+          {data.length} MEDIDORES · KWH DE LAS ÚLTIMAS 24 H VS BASELINE DIARIO (DÍAS 1–7)
         </span>
       </div>
       <MeterFilterBar withSort />
@@ -75,8 +75,8 @@ export function MetersPage() {
             <tr className="grid h-[38px] items-center gap-3.5 border-b border-line px-4 text-left font-mono text-[10px] tracking-[0.08em] text-muted" style={{ gridTemplateColumns: COLS }}>
               <th className="font-normal">MEDIDOR</th>
               <th className="font-normal">ZONA</th>
-              <th className="text-right font-normal">KWH 7 D</th>
-              <th className="text-right font-normal">BASELINE</th>
+              <th className="text-right font-normal">KWH 24 H</th>
+              <th className="text-right font-normal">BASELINE/DÍA</th>
               <th className="font-normal">VARIACIÓN</th>
               <th className="font-normal">ESTADO</th>
               <th className="font-normal">ANOMALÍA IA</th>

@@ -11,10 +11,10 @@ describe('report narrative', () => {
 
   it('writes the executive summary from the findings, most urgent first', () => {
     const [real, dq, rest] = executiveSummary(report)
-    expect(real).toMatch(/^M-109 \(Compresor línea 3\) consume \+103,1% .* anomalía real, la primera en prioridad/)
-    expect(dq).toMatch(/^M-112 .* 25 lecturas son físicamente imposibles/)
+    expect(real).toMatch(/^M-109 \(Compresor línea 3\) consume \+110,7% .* anomalía real, la primera en prioridad/)
+    expect(dq).toMatch(/^M-112 .* 17 lecturas son físicamente inconsistentes desde el día 13/)
     expect(rest).toMatch(/^Los cambios de M-104 y M-106 se explican por eventos operativos/)
-    expect(rest).toContain('parada programada')
+    expect(rest).toContain('«Scheduled maintenance outage for 12 hours»')
   })
 
   it('handles a report without findings', () => {
@@ -24,7 +24,9 @@ describe('report narrative', () => {
   })
 
   it('summarises consumption and classification', () => {
-    expect(consumptionHeadline(report)).toBe('La planta consumió 13.984 kWh en 7 días, +11,7% frente a su baseline. El aumento viene sobre todo de M-109 y M-104.')
+    expect(consumptionHeadline(report)).toBe(
+      'En las últimas 24 h la planta consumió 12.503 kWh, +16,2% frente a su baseline diario. El aumento viene sobre todo de M-109 y M-104.',
+    )
     expect(classificationHeadline(report)).toBe('1 anomalía real, 2 cambios explicados por la operación y 1 problema de medición.')
   })
 })

@@ -21,7 +21,7 @@ export interface ElectricalRow {
 }
 
 /** Baseline → current comparison of voltage, current and power factor. */
-export function electricalRows(stats: Pick<MeterStats, 'base_electrical' | 'current_electrical' | 'pf_out_of_range'>): ElectricalRow[] {
+export function electricalRows(stats: Pick<MeterStats, 'base_electrical' | 'current_electrical' | 'pf_out_of_range' | 'pf_jumps'>): ElectricalRow[] {
   const b = stats.base_electrical
   const c = stats.current_electrical
   const pct = (x: number, y: number) => (x ? ((y - x) / x) * 100 : 0)
@@ -34,8 +34,13 @@ export function electricalRows(stats: Pick<MeterStats, 'base_electrical' | 'curr
     {
       label: 'FACTOR P.',
       value: fmtNum(c.power_factor, 2),
-      delta: stats.pf_out_of_range > 0 ? `${stats.pf_out_of_range} fuera de [0,1]` : `${dpf < 0 ? '−' : '+'}${fmtNum(Math.abs(dpf), 2)}`,
-      alarm: dpf <= -0.05 || stats.pf_out_of_range > 0,
+      delta:
+        stats.pf_out_of_range > 0
+          ? `${stats.pf_out_of_range} fuera de [0,1]`
+          : stats.pf_jumps > 0
+            ? `${stats.pf_jumps} saltos`
+            : `${dpf < 0 ? '−' : '+'}${fmtNum(Math.abs(dpf), 2)}`,
+      alarm: dpf <= -0.05 || stats.pf_out_of_range > 0 || stats.pf_jumps > 0,
     },
   ]
 }

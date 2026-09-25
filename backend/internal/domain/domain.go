@@ -35,6 +35,7 @@ const (
 	EventLoadIncrease EventKind = "LOAD_INCREASE" // e.g. a new production line starts
 	EventLoadDecrease EventKind = "LOAD_DECREASE" // e.g. a shift is removed
 	EventShutdown     EventKind = "SHUTDOWN"      // scheduled stop / maintenance
+	EventDataQuality  EventKind = "DATA_QUALITY"  // a known metering / telemetry problem
 	EventOther        EventKind = "OTHER"
 )
 
@@ -50,11 +51,16 @@ type Event struct {
 // Kind maps the free-text event type from events.csv to a load effect.
 func (e Event) Kind() EventKind {
 	switch strings.ToUpper(e.Type) {
+	case "UNKNOWN", "NONE", "N/A":
+		// An explicit "no known cause" record never explains a change.
+		return EventOther
+	case "DATA_QUALITY", "METER_FAULT", "COMMUNICATION_ERROR":
+		return EventDataQuality
 	case "PRODUCTION_LINE_START", "NEW_PRODUCTION_LINE", "LOAD_INCREASE", "SHIFT_ADDED":
 		return EventLoadIncrease
 	case "SHIFT_REMOVED", "LOAD_DECREASE":
 		return EventLoadDecrease
-	case "SCHEDULED_SHUTDOWN", "PLANNED_SHUTDOWN", "MAINTENANCE", "SHUTDOWN":
+	case "SCHEDULED_SHUTDOWN", "PLANNED_SHUTDOWN", "SCHEDULED_OUTAGE", "PLANNED_OUTAGE", "MAINTENANCE", "SHUTDOWN":
 		return EventShutdown
 	}
 	// Unknown codes (real datasets name events freely): fall back to keywords in
@@ -70,6 +76,8 @@ func (e Event) Kind() EventKind {
 		return false
 	}
 	switch {
+	case has("INTERMITTENT", "INTERMITENTE", "LECTURAS", "READINGS", "TELEMETR", "CALIDAD DE DATOS", "DATA QUALITY"):
+		return EventDataQuality
 	case has("SHUTDOWN", "PARADA", "APAGADO", "MANTENIMIENTO", "MAINTENANCE", "STOP", "OUTAGE"):
 		return EventShutdown
 	case has("DECREASE", "REDUC", "REMOVED", "DISMINU", "RETIRO"):
@@ -169,21 +177,25 @@ type VariableChange struct {
 // Evidence is everything the engine computed for a finding. It is persisted
 // with the anomaly and is the only input the explainer (LLM) receives.
 type Evidence struct {
-	MeterID            string           `json:"meter_id"`
-	MeterName          string           `json:"meter_name"`
-	BaselineKWh        float64          `json:"baseline_kwh"`
-	CurrentKWh         float64          `json:"current_kwh"`
-	VariationPct       float64          `json:"variation_pct"`
-	OnsetDay           int              `json:"onset_day,omitempty"`
-	EndDay             int              `json:"end_day,omitempty"`
-	PersistentHours    int              `json:"persistent_hours"`
-	NightRatio         float64          `json:"night_ratio"`
-	InvalidReadings    int              `json:"invalid_readings"`
-	PhysicalCoherence  float64          `json:"physical_coherence"`
-	Signals            []Signal         `json:"signals"`
-	Variables          []VariableChange `json:"variables"`
-	RelatedEvents      []Event          `json:"related_events"`
-	EventExplainsShift bool             `json:"event_explains_shift"`
+	MeterID           string           `json:"meter_id"`
+	MeterName         string           `json:"meter_name"`
+	BaselineKWh       float64          `json:"baseline_kwh"`
+	CurrentKWh        float64          `json:"current_kwh"`
+	VariationPct      float64          `json:"variation_pct"`
+	OnsetDay          int              `json:"onset_day,omitempty"`
+	EndDay            int              `json:"end_day,omitempty"`
+	PersistentHours   int              `json:"persistent_hours"`
+	NightRatio        float64          `json:"night_ratio"`
+	InvalidReadings   int              `json:"invalid_readings"`
+	PhysicalCoherence float64          `json:"physical_coherence"`
+	Signals           []Signal         `json:"signals"`
+	Variables         []VariableChange `json:"variables"`
+	RelatedEvents     []Event          `json:"related_events"`
+	// ShiftPct is the mean deviation of the episode (the change an event may
+	// explain); VariationPct is the current day against the baseline.
+	ShiftPct           float64    `json:"shift_pct"`
+	Onset              *time.Time `json:"onset,omitempty"`
+	EventExplainsShift bool       `json:"event_explains_shift"`
 }
 
 // Anomaly is a classified finding with its explanation and recommended action.

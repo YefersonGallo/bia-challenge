@@ -38,7 +38,10 @@ func allowedNumbers(ev domain.Evidence) []float64 {
 	var out []float64
 	out = add(out, ev.BaselineKWh, ev.CurrentKWh, ev.VariationPct, float64(ev.OnsetDay), float64(ev.EndDay),
 		float64(ev.PersistentHours), ev.NightRatio, float64(ev.InvalidReadings), ev.PhysicalCoherence*100, (1-ev.PhysicalCoherence)*100,
-		ev.BaselineKWh/7, ev.CurrentKWh/7, 24, 7, 14)
+		ev.ShiftPct, ev.BaselineKWh/24, ev.CurrentKWh/24, 24, 7, 14)
+	if ev.Onset != nil {
+		out = add(out, float64(ev.Onset.Day()), float64(ev.Onset.Hour()))
+	}
 	for _, s := range ev.Signals {
 		out = add(out, s.Value)
 		for _, m := range numberRe.FindAllString(s.Description, -1) {

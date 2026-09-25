@@ -5,25 +5,27 @@
   "CRITICAL": 1,
   "OK": 8
  },
- "current_kwh": 13983.6,
- "baseline_kwh": 12514.3,
- "variation_pct": 11.7,
+ "period_kwh": 155250.8,
+ "period_days": 14,
+ "current_kwh": 12502.5,
+ "baseline_kwh": 10757.5,
+ "variation_pct": 16.2,
  "anomalies": 4,
  "high_priority": 2,
  "open_anomalies": 4,
  "avg_confidence": 0.91,
  "last_analysis": {
-  "id": "A-0924-1856-a133",
+  "id": "A-0925-0249-4ff1",
   "status": "COMPLETED",
-  "started_at": "2026-09-24T18:56:20.691248044Z",
-  "finished_at": "2026-09-24T18:56:22.799201227Z",
+  "started_at": "2026-09-25T02:49:34.821156856Z",
+  "finished_at": "2026-09-25T02:49:35.182443133Z",
   "current_step": 7,
   "steps": [
    {
     "key": "readings",
     "label": "Lecturas",
     "status": "COMPLETED",
-    "result": "4.032 lecturas · 25 inválidas"
+    "result": "4.032 lecturas · 17 inconsistentes"
    },
    {
     "key": "baseline",
@@ -69,6 +71,6 @@
    "headline": "4 anomalías detectadas · 2 requieren atención prioritaria"
   }
  },
- "invalid_readings": 25,
+ "invalid_readings": 17,
  "readings": 4032
 }

@@ -116,7 +116,11 @@ export function zoneOf(location: string): Zone {
 
 const EVENT_LABEL: Record<string, string> = {
   PRODUCTION_LINE_START: 'Arranque de línea',
+  OPERATIONAL_CHANGE: 'Cambio operativo',
   SCHEDULED_SHUTDOWN: 'Parada programada',
+  SCHEDULED_OUTAGE: 'Parada programada',
   MAINTENANCE: 'Mantenimiento',
+  DATA_QUALITY: 'Calidad de datos',
+  UNKNOWN: 'Sin causa registrada',
 }
 export const eventLabel = (type: string) => EVENT_LABEL[type] ?? type.replaceAll('_', ' ').toLowerCase()

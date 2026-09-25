@@ -50,3 +50,17 @@ func TestRoundTrip(t *testing.T) {
 		t.Errorf("meter names not loaded: %+v", d.Meters[8])
 	}
 }
+
+// The official events.csv uses event_timestamp / event_type and has no id column.
+func TestReadEventsOfficialFormat(t *testing.T) {
+	in := "meter_id,event_timestamp,event_type,description\n" +
+		"M-104,2026-09-11 00:00,OPERATIONAL_CHANGE,New production line activated\n" +
+		"M-109,2026-09-12 14:00,UNKNOWN,No operational event reported\n"
+	evs, err := ReadEvents(strings.NewReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(evs) != 2 || evs[0].ID != "EV-001" || evs[1].Type != "UNKNOWN" || evs[1].Timestamp.Hour() != 14 {
+		t.Fatalf("unexpected events: %+v", evs)
+	}
+}

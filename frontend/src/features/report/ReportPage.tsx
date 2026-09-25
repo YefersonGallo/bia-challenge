@@ -48,7 +48,7 @@ function Contributions({ r }: { r: Report }) {
   const typeOf = new Map(r.findings.map((f) => [f.meter_id, f.type]))
   return (
     <figure className="m-0 flex flex-col gap-1.5">
-      <figcaption className="font-mono text-[10px] tracking-[0.1em] text-paper-muted">CAMBIO VS BASELINE · KWH EN 7 DÍAS</figcaption>
+      <figcaption className="font-mono text-[10px] tracking-[0.1em] text-paper-muted">CAMBIO VS BASELINE DIARIO · KWH EN LAS ÚLTIMAS 24 H</figcaption>
       {rows.map((c) => {
         const t = typeOf.get(c.meter_id)
         const color = t ? TYPE_META[t].paper : '#b8bdc7'
@@ -255,7 +255,10 @@ function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: Return
             <div className="flex flex-col gap-1">
               <h3 className="m-0 text-sm font-semibold text-paper-ink">Metodología</h3>
               <span>Baseline: mediana por hora del día de los días 1–{r.methodology.baseline_days} (robusta a picos).</span>
-              <span>Desvío sostenido: días fuera de ±{fmtNum(r.methodology.shift_threshold_pct)}% del baseline.</span>
+              <span>
+                Cambio sostenido: al menos {r.methodology.min_episode_hours} h fuera de ±{fmtNum(r.methodology.shift_threshold_pct)}% del perfil horario, a partir del día{' '}
+                {r.methodology.baseline_days + 1}.
+              </span>
               <span>Picos: z-score robusto (MAD) &gt; {fmtNum(r.methodology.z_threshold, 1)}.</span>
               <span>Crítico: variación &gt; {fmtNum(r.methodology.critical_pct)}%; severidad alta &gt; {fmtNum(r.methodology.high_pct)}%.</span>
             </div>
@@ -265,7 +268,9 @@ function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: Return
                 {fmtNum(r.summary.readings)} lecturas, {fmtNum(r.summary.invalid_readings)} inválidas (PF fuera de [0,1] o 0 V con consumo).
               </span>
               <span>
-                Coherencia física: kWh ≈ V·I·PF/1000 con tolerancia ±{fmtNum(r.methodology.coherence_tol_pct)}%; por debajo de {fmtNum(r.methodology.min_coherence_pct)}% el medidor es sospechoso.
+                Lectura inconsistente: voltaje fuera de ±{fmtNum(r.methodology.voltage_tol_pct)}% del habitual del medidor, salto de factor de potencia mayor a{' '}
+                {fmtNum(r.methodology.pf_jump, 2)} frente a sus vecinas, o relación kWh / V·I·PF que se aparta ±{fmtNum(r.methodology.coherence_tol_pct)}% de la propia y de
+                la local. Un cambio de régimen sostenido no cuenta como error de datos.
               </span>
             </div>
             <div className="flex flex-col gap-1">
@@ -280,7 +285,7 @@ function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: Return
             </div>
             <div className="flex flex-col gap-1">
               <h3 className="m-0 text-sm font-semibold text-paper-ink">Limitaciones</h3>
-              <span>14 días de datos: el baseline usa 7 días y no captura estacionalidad semanal.</span>
+              <span>{r.summary.period_days} días de datos: el baseline usa {r.methodology.baseline_days} días y no captura estacionalidad semanal.</span>
               <span>La topología eléctrica no viene en el dataset.</span>
               <span>Claude redacta la explicación, pero no cambia tipo, severidad ni cifras.</span>
             </div>

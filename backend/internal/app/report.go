@@ -44,6 +44,9 @@ type Report struct {
 type Methodology struct {
 	BaselineDays      int     `json:"baseline_days"`
 	ShiftThresholdPct float64 `json:"shift_threshold_pct"`
+	MinEpisodeHours   int     `json:"min_episode_hours"`
+	VoltageTolPct     float64 `json:"voltage_tol_pct"`
+	PFJump            float64 `json:"pf_jump"`
 	CriticalPct       float64 `json:"critical_pct"`
 	HighPct           float64 `json:"high_pct"`
 	ZThreshold        float64 `json:"z_threshold"`
@@ -59,6 +62,9 @@ func methodologyOf(c analysis.Config) Methodology {
 	return Methodology{
 		BaselineDays:      c.BaselineDays,
 		ShiftThresholdPct: c.ShiftThreshold * 100,
+		MinEpisodeHours:   c.MinEpisodeHours,
+		VoltageTolPct:     c.VoltageTol * 100,
+		PFJump:            c.PFJump,
 		CriticalPct:       c.CriticalPct,
 		HighPct:           c.HighPct,
 		ZThreshold:        c.ZThreshold,

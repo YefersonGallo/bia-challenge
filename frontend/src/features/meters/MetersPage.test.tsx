@@ -59,7 +59,7 @@ describe('MetersPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'CONSUMO' }))
     await waitFor(() => expect(rowIds()[0]).toBe('M-109'))
     expect(calls.at(-1)?.path).toContain('sort=consumption')
-    expect(rowIds()[1]).toBe('M-108')
+    expect(rowIds()[1]).toBe('M-104')
   })
 
   it('shows an empty state that clears the filters', async () => {

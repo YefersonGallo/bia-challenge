@@ -25,7 +25,11 @@ export interface AnomalyRef {
 export interface MeterSummary extends Meter {
   status: MeterStatus
   status_reason: string
+  /** Consumption of the whole period (14 days). */
+  period_kwh: number
+  /** Expected consumption of one day (hour-of-day medians of days 1–7). */
   baseline_kwh: number
+  /** Consumption of the last 24 hours. */
   current_kwh: number
   variation_pct: number
   invalid_readings: number
@@ -56,6 +60,7 @@ export interface Episode {
   onset_day: number
   end_day: number
   onset: string
+  end: string
   direction: 1 | -1
   hours: number
   recovered: boolean
@@ -72,7 +77,17 @@ export interface MeterStats {
   invalid_readings: number
   pf_out_of_range: number
   zero_voltage: number
+  voltage_anomalies: number
+  pf_jumps: number
+  incoherent_readings: number
   physical_coherence: number
+  issue_onset?: string
+  issue_hours: number
+  voltage_range: [number, number]
+  pf_range: [number, number]
+  relation_shift_pct: number
+  readings: number
+  period_kwh: number
   days: DayPoint[]
   hourly_baseline: number[]
   hourly_current: number[]
@@ -121,6 +136,9 @@ export interface Evidence {
   variables: VariableChange[] | null
   related_events: EventItem[] | null
   event_explains_shift: boolean
+  /** Mean deviation of the episode (the change an event may explain). */
+  shift_pct: number
+  onset?: string
 }
 
 export interface Anomaly {
@@ -176,6 +194,8 @@ export interface AnalysisRun {
 export interface DashboardSummary {
   meters: number
   status_counts: Record<MeterStatus, number>
+  period_kwh: number
+  period_days: number
   current_kwh: number
   baseline_kwh: number
   variation_pct: number
@@ -204,6 +224,9 @@ export interface Report {
 export interface Methodology {
   baseline_days: number
   shift_threshold_pct: number
+  min_episode_hours: number
+  voltage_tol_pct: number
+  pf_jump: number
   critical_pct: number
   high_pct: number
   z_threshold: number

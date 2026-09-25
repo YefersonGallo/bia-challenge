@@ -1,15 +1,15 @@
 {
- "id": "A-0924-1856-a133",
+ "id": "A-0925-0249-4ff1",
  "status": "COMPLETED",
- "started_at": "2026-09-24T18:56:20.691248044Z",
- "finished_at": "2026-09-24T18:56:22.799201227Z",
+ "started_at": "2026-09-25T02:49:34.821156856Z",
+ "finished_at": "2026-09-25T02:49:35.182443133Z",
  "current_step": 7,
  "steps": [
   {
    "key": "readings",
    "label": "Lecturas",
    "status": "COMPLETED",
-   "result": "4.032 lecturas · 25 inválidas"
+   "result": "4.032 lecturas · 17 inconsistentes"
   },
   {
    "key": "baseline",
