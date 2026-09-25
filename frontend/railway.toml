@@ -1,0 +1,12 @@
+# Railway service "web" (Root Directory: /frontend, Config file: /frontend/railway.toml).
+# Set API_UPSTREAM=api.railway.internal:8080 in the service variables.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["/frontend/**"]
+
+[deploy]
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

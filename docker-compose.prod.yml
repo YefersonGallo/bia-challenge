@@ -1,0 +1,32 @@
+# Production override for a VPS: adds Caddy (automatic HTTPS) and stops
+# publishing the web container directly.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  web:
+    ports: !reset []
+    expose:
+      - "80"
+
+  api:
+    environment:
+      CORS_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

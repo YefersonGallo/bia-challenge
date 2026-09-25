@@ -17,6 +17,7 @@ import (
 type Config struct {
 	Auth       Auth
 	CORSOrigin string // "*" or a specific origin; empty disables CORS headers
+	AIProvider string // shown by /api/health: "claude:<model>" or "template"
 	Logger     *slog.Logger
 }
 
@@ -148,7 +149,11 @@ func (s *server) fail(w http.ResponseWriter, err error) {
 // --- handlers ---------------------------------------------------------------
 
 func (s *server) health(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	ai := s.cfg.AIProvider
+	if ai == "" {
+		ai = "template"
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "ai": ai})
 }
 
 func (s *server) login(w http.ResponseWriter, r *http.Request) {

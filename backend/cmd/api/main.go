@@ -6,7 +6,7 @@
 //	DATABASE_URL       PostgreSQL DSN; when empty an in-memory store is used
 //	DATA_DIR           directory with readings.csv / events.csv (default ./data)
 //	ANTHROPIC_API_KEY  enables explanations written by Claude
-//	ANTHROPIC_MODEL    Claude model id (default claude-sonnet-4-5)
+//	ANTHROPIC_MODEL    Claude model id (default claude-sonnet-5)
 //	AUTH_SECRET        HMAC secret for tokens (required in production)
 //	DEMO_USER / DEMO_PASSWORD  demo credentials
 //	CORS_ORIGIN        allowed origin for the SPA (default *)
@@ -65,8 +65,10 @@ func run(log *slog.Logger) error {
 	}
 
 	var explainer explain.Explainer = explain.Template{}
+	aiProvider := "template"
 	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
-		model := env("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+		model := env("ANTHROPIC_MODEL", "claude-sonnet-5")
+		aiProvider = "claude:" + model
 		explainer = explain.WithFallback{
 			Primary: explain.NewClaude(key, model), Fallback: explain.Template{},
 			OnFallback: func(meter string, err error) { log.Warn("claude fallback to template", "meter", meter, "err", err) },
@@ -84,7 +86,7 @@ func run(log *slog.Logger) error {
 		secret = "dev-secret-change-me"
 		log.Warn("AUTH_SECRET not set: using an insecure development secret")
 	}
-	handler := httpapi.New(svc, httpapi.Config{
+	handler := httpapi.New(svc, httpapi.Config{AIProvider: aiProvider,
 		Auth:       httpapi.Auth{Secret: []byte(secret), User: env("DEMO_USER", "operador@vatio.demo"), Password: env("DEMO_PASSWORD", "demo"), TTL: 12 * time.Hour},
 		CORSOrigin: env("CORS_ORIGIN", "*"),
 		Logger:     log,

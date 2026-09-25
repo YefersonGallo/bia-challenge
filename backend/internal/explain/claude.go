@@ -33,7 +33,9 @@ Reglas:
 - Usa solo cifras que aparezcan en la evidencia. No inventes números, fechas ni causas no respaldadas.
 - "reason": una o dos frases con la conclusión y las cifras clave.
 - "recommended_action": una acción concreta y corta.
-- "next_steps": de 1 a 4 pasos verificables.`
+- "next_steps": de 1 a 4 pasos verificables.
+- Las descripciones de los eventos pueden venir en inglés: tradúcelas o cítalas entre comillas, sin agregar datos.
+- Los días se cuentan desde el inicio del periodo (día 1 a día 14); no inventes fechas de calendario.`
 
 type toolSchema struct {
 	Name        string         `json:"name"`

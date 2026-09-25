@@ -39,6 +39,23 @@ El stack levanta tres servicios:
 
 Así el navegador habla con un solo origen y la `ANTHROPIC_API_KEY` nunca sale del backend. Al arrancar, la API aplica las migraciones y siembra la base desde los CSV si está vacía.
 
+### En producción
+
+Dos opciones, con las mismas imágenes:
+
+- **Railway**: un servicio por Dockerfile, configurado con `backend/railway.toml` y `frontend/railway.toml`, más PostgreSQL gestionado. En el servicio web, `API_UPSTREAM=api.railway.internal:8080`.
+- **VPS**: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`. Añade Caddy con HTTPS automático para el `DOMAIN` definido en `.env`.
+
+`GET /api/health` indica qué motor de explicaciones está activo (`"ai":"claude:<modelo>"` o `"template"`).
+
+### Probar la conexión con Claude
+
+```bash
+make ai-check    # lee ANTHROPIC_API_KEY de .env; corre el análisis y pide las 4 explicaciones a Claude
+```
+
+Cada hallazgo sale con `explained_by`. Si Claude falla o cita una cifra sin sustento, aparece una línea `FALLBACK` y ese hallazgo se explica con la plantilla.
+
 ### En local (sin Docker)
 
 Requisitos: Go ≥ 1.23 y Node ≥ 22.
@@ -59,7 +76,7 @@ Para usar PostgreSQL en local: `DATABASE_URL=postgres://… make dev-api`.
 | `DATABASE_URL` | vacío → memoria | DSN de PostgreSQL |
 | `DATA_DIR` | `data` | Carpeta con `readings.csv`, `events.csv` y `meters.csv` (este último es opcional) |
 | `ANTHROPIC_API_KEY` | vacío | Activa las explicaciones redactadas por Claude |
-| `ANTHROPIC_MODEL` | `claude-sonnet-4-5` | Modelo de Claude |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5` | Modelo de Claude |
 | `AUTH_SECRET` | secreto de desarrollo (con aviso) | Secreto HMAC de los tokens |
 | `DEMO_USER` / `DEMO_PASSWORD` | `operador@vatio.demo` / `demo` | Credenciales de la demo |
 | `STEP_DELAY_MS` | `450` | Pausa entre pasos del análisis para que la UI muestre el progreso |

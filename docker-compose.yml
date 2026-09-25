@@ -25,7 +25,7 @@ services:
       DATABASE_URL: postgres://vatio:${POSTGRES_PASSWORD:-vatio}@db:5432/vatio?sslmode=disable
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-5}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5}
       DEMO_USER: ${DEMO_USER:-operador@vatio.demo}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-demo}
       STEP_DELAY_MS: ${STEP_DELAY_MS:-450}

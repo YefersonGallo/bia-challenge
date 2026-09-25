@@ -1,5 +1,6 @@
 server {
-  listen 80;
+  # PORT and API_UPSTREAM are filled by the nginx image (envsubst) at start.
+  listen ${PORT};
   server_name _;
   root /usr/share/nginx/html;
   index index.html;
@@ -17,9 +18,9 @@ server {
     return 200 "ok";
   }
 
-  # REST API (Go service in docker-compose).
+  # REST API: the Go service (api:8080 in docker compose, api.railway.internal:8080 on Railway).
   location /api/ {
-    proxy_pass http://api:8080;
+    proxy_pass http://${API_UPSTREAM};
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -32,11 +33,18 @@ server {
   location /assets/ {
     expires 1y;
     add_header Cache-Control "public, immutable";
+    # add_header in a location drops the server-level ones, so repeat them.
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
   }
 
   # SPA routing: unknown paths fall back to index.html.
   location / {
     try_files $uri $uri/ /index.html;
     add_header Cache-Control "no-cache";
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
   }
 }

@@ -1,9 +1,9 @@
 // Command analyze runs the anomaly engine over a data directory and prints the
-// findings in the output format of the challenge (one JSON object per anomaly),
-// using the deterministic template explanations. Handy to check a dataset
-// without starting the API:
+// findings in the output format of the challenge (one JSON object per anomaly).
+// Handy to check a dataset, or the Claude connection, without starting the API:
 //
-//	go run ./cmd/analyze -data ./data
+//	go run ./cmd/analyze -data ./data            # template explanations
+//	ANTHROPIC_API_KEY=… go run ./cmd/analyze -llm # explanations written by Claude
 package main
 
 import (
@@ -22,7 +22,25 @@ import (
 func main() {
 	dir := flag.String("data", "data", "directory with readings.csv and events.csv")
 	verbose := flag.Bool("v", false, "also print the rule status of every meter and the evidence signals")
+	llm := flag.Bool("llm", false, "write the explanations with Claude (needs ANTHROPIC_API_KEY)")
 	flag.Parse()
+
+	var explainer explain.Explainer = explain.Template{}
+	if *llm {
+		key := os.Getenv("ANTHROPIC_API_KEY")
+		if key == "" {
+			log.Fatal("-llm needs ANTHROPIC_API_KEY")
+		}
+		model := os.Getenv("ANTHROPIC_MODEL")
+		if model == "" {
+			model = "claude-sonnet-5"
+		}
+		fmt.Fprintf(os.Stderr, "explainer    Claude · %s\n", model)
+		explainer = explain.WithFallback{
+			Primary: explain.NewClaude(key, model), Fallback: explain.Template{},
+			OnFallback: func(meter string, err error) { fmt.Fprintf(os.Stderr, "FALLBACK     %s: %v\n", meter, err) },
+		}
+	}
 
 	d, err := ingest.LoadDir(*dir)
 	if err != nil {
@@ -42,10 +60,16 @@ func main() {
 	enc.SetIndent("", "  ")
 	enc.SetEscapeHTML(false)
 	for _, f := range res.Findings {
-		x, _ := explain.Template{}.Explain(context.Background(), f.Anomaly)
+		x, err := explainer.Explain(context.Background(), f.Anomaly)
+		if err != nil {
+			log.Fatalf("%s: %v", f.Anomaly.MeterID, err)
+		}
 		out := map[string]any{
 			"meter_id": f.Anomaly.MeterID, "anomaly": f.Anomaly.IsAnomaly(), "type": f.Anomaly.Type, "severity": f.Anomaly.Severity,
 			"confidence": f.Anomaly.Confidence, "reason": x.Reason, "recommended_action": x.RecommendedAction,
+		}
+		if *llm || *verbose {
+			out["explained_by"] = x.Source
 		}
 		if *verbose {
 			out["priority"] = f.Anomaly.Rank

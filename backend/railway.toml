@@ -1,0 +1,11 @@
+# Railway service "api" (Root Directory: /backend, Config file: /backend/railway.toml).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["/backend/**"]
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

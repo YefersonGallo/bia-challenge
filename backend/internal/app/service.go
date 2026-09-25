@@ -445,15 +445,27 @@ func (s *Service) execute(ctx context.Context, run *domain.AnalysisRun) error {
 		s.advance(ctx, run, key, result)
 	})
 
-	// explanation: the LLM writes words on top of the engine's evidence
+	// explanation: the LLM writes words on top of the engine's evidence. The
+	// findings are explained concurrently (one request each) to keep the run short.
+	exps := make([]explain.Explanation, len(res.Findings))
+	errs := make([]error, len(res.Findings))
+	var wg sync.WaitGroup
+	for i, f := range res.Findings {
+		wg.Add(1)
+		go func(i int, a domain.Anomaly) {
+			defer wg.Done()
+			exps[i], errs[i] = s.explainer.Explain(ctx, a)
+		}(i, f.Anomaly)
+	}
+	wg.Wait()
 	byLLM := 0
 	anomalies := make([]domain.Anomaly, 0, len(res.Findings))
-	for _, f := range res.Findings {
+	for i, f := range res.Findings {
 		a := f.Anomaly
-		exp, err := s.explainer.Explain(ctx, a)
-		if err != nil {
-			return fmt.Errorf("explain %s: %w", a.MeterID, err)
+		if errs[i] != nil {
+			return fmt.Errorf("explain %s: %w", a.MeterID, errs[i])
 		}
+		exp := exps[i]
 		if exp.Source == "claude" {
 			byLLM++
 		}

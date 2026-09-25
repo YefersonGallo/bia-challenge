@@ -6,7 +6,7 @@ help: ## List the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
 # --- local development -------------------------------------------------------
-.PHONY: install dev-api dev-web gendata analyze
+.PHONY: install dev-api dev-web gendata analyze ai-check
 install: ## Install frontend dependencies and download Go modules
 	cd backend && go mod download
 	cd frontend && npm ci
@@ -22,6 +22,9 @@ gendata: ## Write the synthetic test dataset to backend/data-synthetic
 
 analyze: ## Run the engine over backend/data and print the findings (challenge JSON format)
 	cd backend && go run ./cmd/analyze -data data -v
+
+ai-check: ## Same as analyze, with explanations written by Claude (reads ANTHROPIC_API_KEY from .env or the shell)
+	@set -a; [ -f .env ] && . ./.env; set +a; cd backend && go run ./cmd/analyze -data data -llm
 
 # --- quality -------------------------------------------------------------------
 .PHONY: test test-backend test-frontend lint
