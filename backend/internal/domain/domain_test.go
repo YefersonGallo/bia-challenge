@@ -90,3 +90,24 @@ func TestEventAttributes(t *testing.T) {
 		t.Errorf("json = %s", b)
 	}
 }
+
+func TestEventKindReadsWordsNotSubstrings(t *testing.T) {
+	cases := []struct {
+		typ, desc string
+		want      EventKind
+	}{
+		{"OPERATIONAL_CHANGE", "New production line activated", EventLoadIncrease},
+		{"OPERATIONAL_CHANGE", "Meter went offline", EventOther},              // "LINE" inside "OFFLINE"
+		{"OPERATIONAL_CHANGE", "Demand decline after the season", EventOther}, // "LINE" inside "DECLINE"
+		{"NOTE", "No new equipment was installed on this line", EventOther},   // unknown type: text never decides
+		{"OPERATIONAL_CHANGE", "No new equipment was installed", EventOther},  // negated description
+		{"CAMBIO_OPERATIVO", "Arranque de la nueva línea", EventLoadIncrease},
+		{"LINE_STOP", "", EventShutdown},
+		{"UNKNOWN", "New production line activated", EventOther},
+	}
+	for _, c := range cases {
+		if got := (Event{Type: c.typ, Description: c.desc}).Kind(); got != c.want {
+			t.Errorf("%s %q = %v, want %v", c.typ, c.desc, got, c.want)
+		}
+	}
+}

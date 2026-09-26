@@ -3,6 +3,7 @@ package app_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -162,5 +163,60 @@ func TestOnlyOneRunAtATime(t *testing.T) {
 func TestMeterNotFound(t *testing.T) {
 	if _, err := newService(t).Meter(context.Background(), "M-999"); !errors.Is(err, app.ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestRecoverInterruptedRun(t *testing.T) {
+	st := memory.New()
+	ds := dataset.Generate()
+	_ = st.Seed(context.Background(), ds.Meters, ds.Readings, ds.Events)
+	ctx := context.Background()
+	stale := domain.AnalysisRun{ID: "A-old", Status: domain.RunRunning, StartedAt: time.Now(), Steps: []domain.StepState{{Key: "readings", Status: domain.RunRunning}}}
+	if err := st.SaveRun(ctx, stale); err != nil {
+		t.Fatal(err)
+	}
+	s := app.New(st, analysis.New(analysis.DefaultConfig()), explain.Template{}, app.Options{})
+	if err := s.RecoverInterrupted(ctx); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := st.Run(ctx, "A-old")
+	if got.Status != domain.RunFailed || got.Error == "" || got.FinishedAt == nil {
+		t.Fatalf("stale run = %+v", got)
+	}
+}
+
+func TestConcurrentActionsNeverReopenAResolvedAnomaly(t *testing.T) {
+	st := memory.New()
+	ds := dataset.Generate()
+	_ = st.Seed(context.Background(), ds.Meters, ds.Readings, ds.Events)
+	ctx := context.Background()
+	s := app.New(st, analysis.New(analysis.DefaultConfig()), explain.Template{}, app.Options{})
+	if _, err := s.StartAnalysis(ctx); err != nil {
+		t.Fatal(err)
+	}
+	s.Wait()
+	as, _ := s.Anomalies(ctx, app.AnomalyQuery{})
+	id := as[0].ID
+	var wg sync.WaitGroup
+	for _, act := range []string{"investigate", "resolve", "investigate", "dismiss", "acknowledge"} {
+		wg.Add(1)
+		go func(act string) {
+			defer wg.Done()
+			_, _ = s.AddAction(ctx, id, "tester", app.ActionInput{Action: act})
+		}(act)
+	}
+	wg.Wait()
+	d, _ := s.Anomaly(ctx, id)
+	resolved := false
+	for _, a := range d.Actions {
+		if a.Status == domain.AnomalyResolved {
+			resolved = true
+		}
+	}
+	if resolved && d.Status != domain.AnomalyResolved {
+		t.Fatalf("a resolved anomaly was reopened: final %s, history %+v", d.Status, d.Actions)
+	}
+	if _, err := s.AddAction(ctx, id, "tester", app.ActionInput{Action: "note", Note: "a\x00b"}); !errors.Is(err, app.ErrInvalid) {
+		t.Fatalf("NUL in note: err = %v", err)
 	}
 }

@@ -12,7 +12,7 @@
   --color-ink-2: #c3ccd6;
   --color-soft: #aeb8c4;
   --color-muted: #8592a3;
-  --color-dim: #5c6b7d;
+  --color-dim: #738296; /* ≥ 4,5:1 on bg and panels for small labels */
   --color-accent: #4fb3ff;
   --color-real: #ff4d3d;
   --color-data: #9d7bff;
@@ -66,4 +66,23 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted);
+}
+
+/* Printing the report ("EXPORTAR PDF"): the whole document, not the scrolled view. */
+@media print {
+  html,
+  body,
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  @page {
+    margin: 12mm;
+  }
+  figure,
+  svg,
+  tr {
+    break-inside: avoid;
+  }
 }

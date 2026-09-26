@@ -1,15 +1,15 @@
 [
   {
-    "id": "A-0926-1310-7596-M-109",
-    "analysis_id": "A-0926-1310-7596",
+    "id": "A-0926-2323-99bb2edae254-M-109",
+    "analysis_id": "A-0926-2323-99bb2edae254",
     "meter_id": "M-109",
-    "detected_at": "2026-09-26T13:10:11.600959809Z",
+    "detected_at": "2026-09-26T23:23:17.865873786Z",
     "type": "REAL_ANOMALY",
     "severity": "HIGH",
     "confidence": 0.97,
     "priority_score": 2.91,
     "rank": 1,
-    "reason": "Consumo +110,7% por encima del baseline sin evento conocido; factor de potencia de 0,94 a 0,74.",
+    "reason": "Consumo 110,7% por encima del baseline sin un evento que lo explique; factor de potencia de 0,94 a 0,74.",
     "recommended_action": "Investigar medidor e instalación.",
     "next_steps": [
       "Inspeccionar en sitio el equipo de Compresor línea 3",
@@ -158,10 +158,10 @@
     "change_point_at": "2026-09-12T14:00:00Z"
   },
   {
-    "id": "A-0926-1310-7596-M-112",
-    "analysis_id": "A-0926-1310-7596",
+    "id": "A-0926-2323-99bb2edae254-M-112",
+    "analysis_id": "A-0926-2323-99bb2edae254",
     "meter_id": "M-112",
-    "detected_at": "2026-09-26T13:10:11.600960209Z",
+    "detected_at": "2026-09-26T23:23:17.865874067Z",
     "type": "DATA_QUALITY",
     "severity": "HIGH",
     "confidence": 0.97,
@@ -200,7 +200,7 @@
         },
         {
           "code": "PF_JUMPS",
-          "description": "12 saltos bruscos del factor de potencia (0,58–0,98)",
+          "description": "12 saltos bruscos del factor de potencia (0,58–0,72)",
           "value": 12
         },
         {
@@ -269,7 +269,7 @@
       "onset": "2026-09-13T00:00:00Z",
       "event_explains_shift": false
     },
-    "evidence_summary": "16 lecturas con voltaje fuera de 209–231 V (202–241 V) · 27 saltos de voltaje de más de 15 V entre horas seguidas · 12 saltos bruscos del factor de potencia (0,58–0,98)",
+    "evidence_summary": "16 lecturas con voltaje fuera de 209–231 V (202–241 V) · 27 saltos de voltaje de más de 15 V entre horas seguidas · 12 saltos bruscos del factor de potencia (0,58–0,72)",
     "confidence_breakdown": [
       {
         "key": "magnitude",
@@ -315,19 +315,19 @@
     "change_point_at": "2026-09-13T00:00:00Z"
   },
   {
-    "id": "A-0926-1310-7596-M-104",
-    "analysis_id": "A-0926-1310-7596",
+    "id": "A-0926-2323-99bb2edae254-M-104",
+    "analysis_id": "A-0926-2323-99bb2edae254",
     "meter_id": "M-104",
-    "detected_at": "2026-09-26T13:10:11.600960532Z",
+    "detected_at": "2026-09-26T23:23:17.865874231Z",
     "type": "EXPLAINABLE_ANOMALY",
     "severity": "MEDIUM",
     "confidence": 0.88,
     "priority_score": 0.834,
     "rank": 3,
-    "reason": "Aumento de +47,4% que coincide con el evento registrado «New production line activated»; la relación eléctrica se mantiene sana.",
+    "reason": "Aumento de 47,4% que coincide con el evento registrado «New production line activated»; la relación eléctrica se mantiene sana.",
     "recommended_action": "Validar con operación y actualizar el baseline.",
     "next_steps": [
-      "Confirmar con Producción que la carga nueva es la esperada",
+      "Confirmar con Producción que el cambio de carga es el esperado",
       "Ajustar el baseline, la potencia contratada y la compensación de reactiva si aplica"
     ],
     "explained_by": "template",
@@ -452,16 +452,16 @@
     "change_point_at": "2026-09-11T00:00:00Z"
   },
   {
-    "id": "A-0926-1310-7596-M-106",
-    "analysis_id": "A-0926-1310-7596",
+    "id": "A-0926-2323-99bb2edae254-M-106",
+    "analysis_id": "A-0926-2323-99bb2edae254",
     "meter_id": "M-106",
-    "detected_at": "2026-09-26T13:10:11.600960675Z",
+    "detected_at": "2026-09-26T23:23:17.865874376Z",
     "type": "FALSE_POSITIVE",
     "severity": "LOW",
     "confidence": 0.75,
     "priority_score": 0.008,
     "rank": 4,
-    "reason": "La caída de −79,9% durante 12 h coincide con el evento registrado «Scheduled maintenance outage for 12 hours», y el consumo volvió a su nivel al terminar.",
+    "reason": "La caída de 79,9% durante 12 h coincide con el evento registrado «Scheduled maintenance outage for 12 hours», y el consumo volvió a su nivel al terminar.",
     "recommended_action": "No escalar.",
     "next_steps": [
       "Registrar como evento operativo conocido",

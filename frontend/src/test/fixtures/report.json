@@ -1,6 +1,6 @@
 {
-  "run_id": "A-0926-1310-7596",
-  "generated_at": "2026-09-26T13:10:11Z",
+  "run_id": "A-0926-2323-99bb2edae254",
+  "generated_at": "2026-09-26T23:23:17Z",
   "headline": "4 anomalías detectadas · 2 requieren atención prioritaria",
   "summary": {
     "meters": 12,
@@ -19,10 +19,10 @@
     "open_anomalies": 4,
     "avg_confidence": 0.89,
     "last_analysis": {
-      "id": "A-0926-1310-7596",
+      "id": "A-0926-2323-99bb2edae254",
       "status": "COMPLETED",
-      "started_at": "2026-09-26T13:10:11.592340217Z",
-      "finished_at": "2026-09-26T13:10:11.600965999Z",
+      "started_at": "2026-09-26T23:23:17.855429425Z",
+      "finished_at": "2026-09-26T23:23:17.865878256Z",
       "current_step": 7,
       "steps": [
         {
@@ -30,7 +30,7 @@
           "label": "Lecturas",
           "status": "COMPLETED",
           "result": "4.032 lecturas · 32 inconsistentes",
-          "duration_ms": 8
+          "duration_ms": 10
         },
         {
           "key": "baseline",
@@ -177,7 +177,7 @@
         2207.6
       ],
       "anomaly": {
-        "id": "A-0926-1310-7596-M-109",
+        "id": "A-0926-2323-99bb2edae254-M-109",
         "type": "REAL_ANOMALY",
         "severity": "HIGH",
         "rank": 1,
@@ -214,7 +214,7 @@
         662.65
       ],
       "anomaly": {
-        "id": "A-0926-1310-7596-M-112",
+        "id": "A-0926-2323-99bb2edae254-M-112",
         "type": "DATA_QUALITY",
         "severity": "HIGH",
         "rank": 2,
@@ -251,7 +251,7 @@
         1725.63
       ],
       "anomaly": {
-        "id": "A-0926-1310-7596-M-104",
+        "id": "A-0926-2323-99bb2edae254-M-104",
         "type": "EXPLAINABLE_ANOMALY",
         "severity": "MEDIUM",
         "rank": 3,
@@ -262,16 +262,16 @@
   ],
   "findings": [
     {
-      "id": "A-0926-1310-7596-M-109",
-      "analysis_id": "A-0926-1310-7596",
+      "id": "A-0926-2323-99bb2edae254-M-109",
+      "analysis_id": "A-0926-2323-99bb2edae254",
       "meter_id": "M-109",
-      "detected_at": "2026-09-26T13:10:11.600959809Z",
+      "detected_at": "2026-09-26T23:23:17.865873786Z",
       "type": "REAL_ANOMALY",
       "severity": "HIGH",
       "confidence": 0.97,
       "priority_score": 2.91,
       "rank": 1,
-      "reason": "Consumo +110,7% por encima del baseline sin evento conocido; factor de potencia de 0,94 a 0,74.",
+      "reason": "Consumo 110,7% por encima del baseline sin un evento que lo explique; factor de potencia de 0,94 a 0,74.",
       "recommended_action": "Investigar medidor e instalación.",
       "next_steps": [
         "Inspeccionar en sitio el equipo de Compresor línea 3",
@@ -639,10 +639,10 @@
       "flagged_readings": null
     },
     {
-      "id": "A-0926-1310-7596-M-112",
-      "analysis_id": "A-0926-1310-7596",
+      "id": "A-0926-2323-99bb2edae254-M-112",
+      "analysis_id": "A-0926-2323-99bb2edae254",
       "meter_id": "M-112",
-      "detected_at": "2026-09-26T13:10:11.600960209Z",
+      "detected_at": "2026-09-26T23:23:17.865874067Z",
       "type": "DATA_QUALITY",
       "severity": "HIGH",
       "confidence": 0.97,
@@ -681,7 +681,7 @@
           },
           {
             "code": "PF_JUMPS",
-            "description": "12 saltos bruscos del factor de potencia (0,58–0,98)",
+            "description": "12 saltos bruscos del factor de potencia (0,58–0,72)",
             "value": 12
           },
           {
@@ -750,7 +750,7 @@
         "onset": "2026-09-13T00:00:00Z",
         "event_explains_shift": false
       },
-      "evidence_summary": "16 lecturas con voltaje fuera de 209–231 V (202–241 V) · 27 saltos de voltaje de más de 15 V entre horas seguidas · 12 saltos bruscos del factor de potencia (0,58–0,98)",
+      "evidence_summary": "16 lecturas con voltaje fuera de 209–231 V (202–241 V) · 27 saltos de voltaje de más de 15 V entre horas seguidas · 12 saltos bruscos del factor de potencia (0,58–0,72)",
       "confidence_breakdown": [
         {
           "key": "magnitude",
@@ -1244,19 +1244,19 @@
       ]
     },
     {
-      "id": "A-0926-1310-7596-M-104",
-      "analysis_id": "A-0926-1310-7596",
+      "id": "A-0926-2323-99bb2edae254-M-104",
+      "analysis_id": "A-0926-2323-99bb2edae254",
       "meter_id": "M-104",
-      "detected_at": "2026-09-26T13:10:11.600960532Z",
+      "detected_at": "2026-09-26T23:23:17.865874231Z",
       "type": "EXPLAINABLE_ANOMALY",
       "severity": "MEDIUM",
       "confidence": 0.88,
       "priority_score": 0.834,
       "rank": 3,
-      "reason": "Aumento de +47,4% que coincide con el evento registrado «New production line activated»; la relación eléctrica se mantiene sana.",
+      "reason": "Aumento de 47,4% que coincide con el evento registrado «New production line activated»; la relación eléctrica se mantiene sana.",
       "recommended_action": "Validar con operación y actualizar el baseline.",
       "next_steps": [
-        "Confirmar con Producción que la carga nueva es la esperada",
+        "Confirmar con Producción que el cambio de carga es el esperado",
         "Ajustar el baseline, la potencia contratada y la compensación de reactiva si aplica"
       ],
       "explained_by": "template",
@@ -1600,16 +1600,16 @@
       "flagged_readings": null
     },
     {
-      "id": "A-0926-1310-7596-M-106",
-      "analysis_id": "A-0926-1310-7596",
+      "id": "A-0926-2323-99bb2edae254-M-106",
+      "analysis_id": "A-0926-2323-99bb2edae254",
       "meter_id": "M-106",
-      "detected_at": "2026-09-26T13:10:11.600960675Z",
+      "detected_at": "2026-09-26T23:23:17.865874376Z",
       "type": "FALSE_POSITIVE",
       "severity": "LOW",
       "confidence": 0.75,
       "priority_score": 0.008,
       "rank": 4,
-      "reason": "La caída de −79,9% durante 12 h coincide con el evento registrado «Scheduled maintenance outage for 12 hours», y el consumo volvió a su nivel al terminar.",
+      "reason": "La caída de 79,9% durante 12 h coincide con el evento registrado «Scheduled maintenance outage for 12 hours», y el consumo volvió a su nivel al terminar.",
       "recommended_action": "No escalar.",
       "next_steps": [
         "Registrar como evento operativo conocido",
@@ -1995,7 +1995,7 @@
       "owner": "Producción",
       "deadline": "Esta semana",
       "steps": [
-        "Confirmar con Producción que la carga nueva es la esperada",
+        "Confirmar con Producción que el cambio de carga es el esperado",
         "Ajustar el baseline, la potencia contratada y la compensación de reactiva si aplica"
       ]
     },

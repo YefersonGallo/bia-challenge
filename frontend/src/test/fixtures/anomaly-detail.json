@@ -1,14 +1,14 @@
 {
-  "id": "A-0926-1310-7596-M-109",
-  "analysis_id": "A-0926-1310-7596",
+  "id": "A-0926-2323-99bb2edae254-M-109",
+  "analysis_id": "A-0926-2323-99bb2edae254",
   "meter_id": "M-109",
-  "detected_at": "2026-09-26T13:10:11.600959809Z",
+  "detected_at": "2026-09-26T23:23:17.865873786Z",
   "type": "REAL_ANOMALY",
   "severity": "HIGH",
   "confidence": 0.97,
   "priority_score": 2.91,
   "rank": 1,
-  "reason": "Consumo +110,7% por encima del baseline sin evento conocido; factor de potencia de 0,94 a 0,74.",
+  "reason": "Consumo 110,7% por encima del baseline sin un evento que lo explique; factor de potencia de 0,94 a 0,74.",
   "recommended_action": "Investigar medidor e instalación.",
   "next_steps": [
     "Inspeccionar en sitio el equipo de Compresor línea 3",

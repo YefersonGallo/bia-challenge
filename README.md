@@ -79,7 +79,7 @@ Para usar PostgreSQL en local: `DATABASE_URL=postgres://… make dev-api`.
 | `DATA_DIR` | `data` | Carpeta con `readings.csv`, `events.csv` y `meters.csv` (este último es opcional) |
 | `ANTHROPIC_API_KEY` (alias `LLM_API_KEY`) | vacío | Activa las explicaciones redactadas por Claude |
 | `ANTHROPIC_MODEL` (alias `LLM_MODEL`) | `claude-sonnet-5` | Modelo de Claude |
-| `LLM_TIMEOUT_MS` | `10000` | Límite de una llamada a Claude; después se usa la plantilla |
+| `LLM_TIMEOUT_MS` | `20000` | Límite de una llamada a Claude; después se usa la plantilla |
 | `TARIFF_COP_PER_KWH` | `850` | Tarifa para estimar el costo del impacto |
 | `AUTH_SECRET` | secreto de desarrollo (con aviso) | Secreto HMAC de los tokens |
 | `DEMO_USER` / `DEMO_PASSWORD` | `operador@vatio.demo` / `demo` | Credenciales de la demo |
@@ -155,6 +155,8 @@ La técnica es híbrida: la estadística robusta y las reglas de dominio **decid
    - `DQ_PF_JUMP`: el FP se aparta más de 0,15 de la mediana de sus vecinas (ventana de 7 h);
    - `DQ_PHYSICS`: la relación `k = kWh / (V·I·PF/1000)` se aparta más de ±25 % de la propia del medidor **y** de la de sus vecinas.
 
+   Además cuentan como problema de datos las horas faltantes y las lecturas distintas para una misma hora (una copia idéntica, como un archivo cargado dos veces, se descarta sin más). Si faltan horas en las últimas 24 h, el consumo se escala a 24 h en vez de parecer una caída.
+
    La última condición es la clave: un cambio de régimen sostenido, como el de M-109, no se confunde con un error de datos. El inicio del problema es la primera hora con al menos 3 lecturas marcadas en 24 h, y la severidad es alta si más del 10 % de las lecturas de alguna ventana de 24 h quedan marcadas. La columna `status` del CSV se ignora.
 2. **Baseline.** Mediana por hora del día de los días 1–7, más la MAD, sobre lecturas plausibles. Su suma es el **consumo esperado de un día**.
 3. **Estado actual.** Consumo de las **últimas 24 h** frente al baseline diario. Es la cifra del ejemplo de la prueba («M-109 · 2.180 kWh · baseline ≈ 1.070 · +103,7 %»).
@@ -175,7 +177,7 @@ La técnica es híbrida: la estadística robusta y las reglas de dominio **decid
    - `confianza = 0,35·magnitud + 0,25·persistencia + 0,25·variables que coinciden + 0,15·coherencia con eventos`, con tope 0,97. Cada componente se guarda con su detalle y la UI lo muestra como barra apilada.
    - **Impacto**: kWh extra por día y por mes, costo a la tarifa configurada y potencia reactiva (`tan(acos(FP))`, límite 0,5).
    - **Proyección 24 h**: perfil por hora del baseline × nivel observado desde el cambio (estacional ingenuo).
-   - `prioridad = peso(severidad) × confianza × impacto normalizado`. Para calidad de datos el impacto es `0,5 + fracción de lecturas marcadas`.
+   - `prioridad = peso(severidad) × confianza × impacto normalizado`. Para calidad de datos el impacto es `0,5 + fracción de lecturas marcadas`. Los empates se rompen de forma explícita (anomalía real antes que calidad de datos, luego más kWh extra, luego el id): el P1 nunca depende del orden de las filas del CSV.
    - El estado del medidor sale del análisis: falso positivo → `OK`, anomalía real alta → `CRITICAL`, el resto → `ALERT`.
 
 El orden importa. Un medidor con lecturas inconsistentes no se confunde con un cambio de carga, y un evento coherente descarta la alarma antes de asignar severidad.
@@ -184,7 +186,9 @@ Los umbrales están en `analysis.DefaultConfig()` y el reporte los muestra en su
 
 ### IA y explicabilidad (Claude)
 
-- `explain.Claude` llama a la Messages API con **tool use forzado** (`report_explanation`). La salida es estructurada (`reason`, `evidence_summary`, `recommended_action`, `next_steps`) y no hay texto libre que parsear.
+- `explain.Claude` llama a la Messages API con **tool use forzado** (`report_explanation`). La salida es estructurada (`reason`, `evidence_summary`, `next_steps`) y no hay texto libre que parsear.
+- La **acción recomendada la fija el motor** por tipo (Real → «Investigar medidor e instalación», Datos → «Validar medidor y telemetría», Explicable → «Validar con operación…», Falso positivo → «No escalar»), igual que tipo, severidad y confianza. Claude la recibe y redacta los pasos coherentes con ella.
+- A Claude se le envían también las cifras derivadas que la UI muestra (kWh extra por día e impacto proyectado), y el validador las acepta con tolerancia de redondeo. Una respuesta rechazada no se guarda en caché: el siguiente análisis vuelve a pedirla.
 - Las explicaciones se piden en paralelo, con un límite de `LLM_TIMEOUT_MS` cada una, y se guardan en caché por un hash de la evidencia: repetir el análisis con los mismos datos no vuelve a llamar a Claude.
 - **Validación de grounding:** cada número que cita Claude debe existir en la evidencia del motor. Si una cifra no coincide (`ErrUngrounded`), o si la API falla, `WithFallback` usa la plantilla determinista y lo registra. La UI indica si la explicación la redactó Claude o la plantilla del motor.
 - Claude **no** cambia tipo, severidad ni cifras.
@@ -266,7 +270,8 @@ CI (GitHub Actions) ejecuta lint, tests y build de ambos proyectos y construye l
 ## Datos
 
 - **`backend/data`** contiene los CSV oficiales de la prueba: `readings.csv` (4.032 lecturas horarias de 12 medidores) y `events.csv` (4 registros).
-  - El lector acepta su formato (`event_timestamp`, `event_type`, sin columna `id`), además de columnas en otro orden, alias, decimales con coma y varios formatos de fecha. Reporta los errores con número de línea.
+  - El lector acepta su formato (`event_timestamp`, `event_type`, sin columna `id`), además de columnas en otro orden, alias, decimales con coma, separador `;` (Excel en es-CO) y varios formatos de fecha. Las seis columnas de lecturas son obligatorias y no admite celdas vacías; los errores traen número de línea y columna, también en `events.csv`.
+  - Un tipo de evento que no está en el catálogo se lee palabra por palabra (no por subcadena: «LINE» no coincide con «OFFLINE»). Solo un tipo genérico de cambio (`OPERATIONAL_CHANGE`) consulta su descripción, y nunca si está negada; un tipo desconocido (`NOTE`) no explica nada.
   - `meters.csv` es un **catálogo de demo** con nombre y ubicación de cada medidor, porque el dataset solo trae `meter_id`. Es opcional: si falta, los medidores se derivan de las lecturas.
 - **`cmd/gendata`** genera un dataset sintético determinista con los 4 casos, pero con otros tiempos (cambios desde el día 8, parada de 72 h, PF > 1 y 0 V). Se usa en los tests para comprobar que el motor no está ajustado a un solo dataset.
 - **`expected_results.csv` no se usa en ningún punto.** El loader no lo lee; está en `.gitignore` y en `.dockerignore`, y no llega a la base, al prompt ni al usuario. Queda reservado al evaluador.
@@ -274,6 +279,10 @@ CI (GitHub Actions) ejecuta lint, tests y build de ambos proyectos y construye l
 ## Seguridad
 
 - La `ANTHROPIC_API_KEY` solo existe en el backend, como variable de entorno. El SPA nunca la ve.
+- Con `DATABASE_URL` definido, la API no arranca sin `AUTH_SECRET`. CORS está desactivado por defecto (el SPA es del mismo origen); `CORS_ORIGIN` lo habilita para un origen concreto.
+- El login bloquea 5 minutos tras 10 intentos fallidos por cliente; los cuerpos de más de 1 MB se rechazan (413); las notas no admiten caracteres de control.
+- Los cambios de estado de una anomalía son atómicos: dos acciones simultáneas no pueden reabrir una alarma resuelta.
+- La API añade las mismas cabeceras de seguridad que nginx, también en el despliegue de imagen única.
 - Los tokens firmados con HMAC tienen expiración.
 - La API no se publica en Docker; solo es accesible a través de nginx.
 - nginx añade cabeceras de seguridad y la imagen de la API es distroless y no root.

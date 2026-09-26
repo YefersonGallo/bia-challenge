@@ -138,27 +138,57 @@ func (e Event) Kind() EventKind {
 	case "SCHEDULED_SHUTDOWN", "PLANNED_SHUTDOWN", "SCHEDULED_OUTAGE", "PLANNED_OUTAGE", "MAINTENANCE", "SHUTDOWN":
 		return EventShutdown
 	}
-	// Unknown codes (real datasets name events freely): fall back to keywords in
-	// the type and the description, in Spanish and English. Shutdowns are checked
-	// first because "parada de la línea" mentions a line too.
-	text := strings.ToUpper(e.Type + " " + e.Description)
-	has := func(words ...string) bool {
-		for _, w := range words {
-			if strings.Contains(text, w) {
-				return true
+	// Other codes (real datasets name events freely) are read word by word:
+	// first the type; only a generic "change" type falls back to the words of its
+	// description, and never when the description is negated ("no new equipment").
+	// A type with no known word (NOTE, COMMENT…) never explains a change.
+	if k := kindOfWords(words(e.Type)); k != EventOther {
+		return k
+	}
+	typeWords := words(e.Type)
+	if !typeWords["CHANGE"] && !typeWords["CAMBIO"] && !typeWords["OPERATIONAL"] && !typeWords["OPERACIONAL"] && !typeWords["OPERATION"] && !typeWords["OPERACION"] {
+		return EventOther
+	}
+	desc := words(e.Description)
+	for _, neg := range []string{"NO", "NOT", "NEVER", "WITHOUT", "SIN", "NUNCA", "NINGUN", "NINGUNA", "NI"} {
+		if desc[neg] {
+			return EventOther
+		}
+	}
+	return kindOfWords(desc)
+}
+
+// words splits free text into upper-case words without accents, so "LINE" does
+// not match inside "OFFLINE" and "línea" matches "LINEA".
+func words(s string) map[string]bool {
+	r := strings.NewReplacer("Á", "A", "É", "E", "Í", "I", "Ó", "O", "Ú", "U", "Ü", "U", "Ñ", "N")
+	out := map[string]bool{}
+	for _, w := range strings.FieldsFunc(r.Replace(strings.ToUpper(s)), func(c rune) bool {
+		return !(c >= 'A' && c <= 'Z' || c >= '0' && c <= '9')
+	}) {
+		out[w] = true
+	}
+	return out
+}
+
+var kindWords = []struct {
+	kind  EventKind
+	words []string
+}{
+	// Shutdowns first: "parada de la línea" mentions a line too.
+	{EventDataQuality, []string{"QUALITY", "CALIDAD", "TELEMETRY", "TELEMETRIA", "INTERMITTENT", "INTERMITENTE", "COMMUNICATION", "COMUNICACION", "FAULT"}},
+	{EventShutdown, []string{"SHUTDOWN", "OUTAGE", "PARADA", "APAGADO", "MANTENIMIENTO", "MAINTENANCE", "STOP", "STOPPED", "CORTE"}},
+	{EventLoadDecrease, []string{"DECREASE", "REDUCTION", "REDUCCION", "REDUCED", "REMOVED", "RETIRO", "RETIRADA", "DISMINUCION"}},
+	{EventLoadIncrease, []string{"START", "STARTUP", "STARTED", "ARRANQUE", "NEW", "NUEVA", "NUEVO", "INCREASE", "AUMENTO", "EXPANSION", "ADDED", "ACTIVATED", "ACTIVADA", "ACTIVADO", "INSTALLED", "INSTALADA", "INSTALADO", "LINE", "LINEA"}},
+}
+
+func kindOfWords(ws map[string]bool) EventKind {
+	for _, k := range kindWords {
+		for _, w := range k.words {
+			if ws[w] {
+				return k.kind
 			}
 		}
-		return false
-	}
-	switch {
-	case has("INTERMITTENT", "INTERMITENTE", "LECTURAS", "READINGS", "TELEMETR", "CALIDAD DE DATOS", "DATA QUALITY"):
-		return EventDataQuality
-	case has("SHUTDOWN", "PARADA", "APAGADO", "MANTENIMIENTO", "MAINTENANCE", "STOP", "OUTAGE"):
-		return EventShutdown
-	case has("DECREASE", "REDUC", "REMOVED", "DISMINU", "RETIRO"):
-		return EventLoadDecrease
-	case has("START", "ARRANQUE", "NEW", "NUEVA", "NUEVO", "INCREASE", "AUMENTO", "EXPANSI", "ADDED", "LÍNEA", "LINEA", "LINE"):
-		return EventLoadIncrease
 	}
 	return EventOther
 }

@@ -41,6 +41,10 @@ type Service struct {
 
 	markMu sync.Mutex
 	marks  map[string]time.Time // end of the previous step, per run (step durations)
+
+	// lifeMu serialises lifecycle changes: check-then-write must be atomic, or a
+	// resolve and an investigate sent at the same time can reopen a resolved alarm.
+	lifeMu sync.Mutex
 }
 
 // New builds the service.
@@ -404,6 +408,13 @@ func (s *Service) Anomaly(ctx context.Context, id string) (AnomalyDetail, error)
 
 // UpdateAnomalyStatus moves an anomaly through its lifecycle.
 func (s *Service) UpdateAnomalyStatus(ctx context.Context, id string, to domain.AnomalyStatus) (domain.Anomaly, error) {
+	s.lifeMu.Lock()
+	defer s.lifeMu.Unlock()
+	return s.updateStatus(ctx, id, to)
+}
+
+// updateStatus applies one transition; the caller holds lifeMu.
+func (s *Service) updateStatus(ctx context.Context, id string, to domain.AnomalyStatus) (domain.Anomaly, error) {
 	a, err := s.store.Anomaly(ctx, id)
 	if err != nil {
 		return domain.Anomaly{}, err
@@ -432,7 +443,7 @@ var Steps = []domain.StepState{
 }
 
 func newID(prefix string, t time.Time) string {
-	b := make([]byte, 2)
+	b := make([]byte, 6) // unique even for many ids in the same minute
 	_, _ = rand.Read(b)
 	return fmt.Sprintf("%s-%s-%s", prefix, t.UTC().Format("0102-1504"), hex.EncodeToString(b))
 }
@@ -694,4 +705,25 @@ func sign(v float64) float64 {
 		return -1
 	}
 	return 1
+}
+
+// RecoverInterrupted marks as failed a run left RUNNING by a previous process
+// (a crash or a kill mid-analysis): nothing will ever finish it, and the UI would
+// otherwise show it "in progress" forever. Call it once at start-up.
+func (s *Service) RecoverInterrupted(ctx context.Context) error {
+	run, err := s.store.LatestRun(ctx)
+	if errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	if err != nil || (run.Status != domain.RunRunning && run.Status != domain.RunPending) {
+		return err
+	}
+	now := s.opts.Clock()
+	run.Status, run.Error, run.FinishedAt = domain.RunFailed, "interrumpido: el servidor se reinició durante el análisis", &now
+	for i := range run.Steps {
+		if run.Steps[i].Status == domain.RunRunning || run.Steps[i].Status == domain.RunPending {
+			run.Steps[i].Status = domain.RunFailed
+		}
+	}
+	return s.store.SaveRun(ctx, run)
 }

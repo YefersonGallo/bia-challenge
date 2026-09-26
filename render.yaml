@@ -24,7 +24,7 @@ services:
       - key: STEP_DELAY_MS
         value: "450"
       - key: LLM_TIMEOUT_MS
-        value: "10000"
+        value: "20000"
       - key: TARIFF_COP_PER_KWH
         value: "850"
       # The free database expires after 30 days; keep the demo up without it.

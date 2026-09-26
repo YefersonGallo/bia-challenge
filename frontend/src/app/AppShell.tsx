@@ -12,16 +12,16 @@ function HeaderKpis() {
   if (!s) return null
   const items = [
     { l: 'MEDIDORES', v: String(s.meters) },
-    { l: `KWH ${s.period_days || 14} D`, v: fmtNum(s.period_kwh) },
+    { l: `KWH ${s.period_days || 14} D`, v: fmtNum(s.period_kwh), wide: true },
     { l: '24 H VS BASELINE', v: fmtPct(s.variation_pct), c: Math.abs(s.variation_pct) >= 10 ? 'var(--color-expl)' : undefined },
     { l: 'ANOMALÍAS', v: s.anomalies == null ? '—' : String(s.anomalies) },
     { l: 'ALTA PRIOR.', v: s.high_priority == null ? '—' : String(s.high_priority), c: s.high_priority ? 'var(--color-real)' : undefined },
-    { l: 'CONF.', v: s.avg_confidence == null ? '—' : fmtConf(s.avg_confidence) },
+    { l: 'CONF.', v: s.avg_confidence == null ? '—' : fmtConf(s.avg_confidence), wide: true },
   ]
   return (
     <div className="hidden gap-px overflow-hidden rounded border border-line bg-line xl:flex">
       {items.map((k) => (
-        <div key={k.l} className="flex flex-col bg-panel-2 px-2.5 py-[3px] whitespace-nowrap">
+        <div key={k.l} className={cx('flex-col bg-panel-2 px-2.5 py-[3px] whitespace-nowrap', 'wide' in k && k.wide ? 'hidden min-[1440px]:flex' : 'flex')}>
           <span className="font-mono text-[9px] tracking-[0.1em] text-muted">{k.l}</span>
           <span className="font-mono text-sm font-semibold" style={{ color: k.c }}>
             {k.v}
@@ -40,9 +40,9 @@ function P1Banner() {
   const p1 = data.find((a) => a.rank === 1 && a.type === 'REAL_ANOMALY' && a.status === 'OPEN')
   if (!p1) return null
   return (
-    <div role="alert" className="flex h-11 shrink-0 items-center gap-4 border-b border-[#5c1a12] bg-[#2a0d09] pr-6">
+    <div role="alert" className="flex h-11 shrink-0 items-center gap-4 border-b border-[#5c1a12] bg-[#2a0d09] pr-6 print:hidden">
       <span className="flex h-11 w-[60px] items-center justify-center bg-real font-mono text-[15px] font-semibold text-bg">P1</span>
-      <span className="font-mono text-sm font-semibold">{p1.meter_id}</span>
+      <span className="font-mono text-sm font-semibold whitespace-nowrap">{p1.meter_id}</span>
       <span className="truncate text-sm text-[#ffd2cc]">
         Anomalía real · {p1.reason} · conf {fmtConf(p1.confidence)}
       </span>
@@ -89,8 +89,8 @@ export function AppShell() {
     .toUpperCase()
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-6 whitespace-nowrap">
+    <div className="flex h-full flex-col overflow-hidden print:block print:h-auto print:overflow-visible">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-6 whitespace-nowrap print:hidden">
         <span className="font-display text-[17px] font-bold">VATIO</span>
         <nav aria-label="Secciones" className="ml-2 flex self-stretch">
           {nav.map((n) => (
@@ -149,7 +149,7 @@ export function AppShell() {
         />
       )}
       <P1Banner />
-      <main className="flex min-h-0 flex-1 flex-col">
+      <main className="flex min-h-0 flex-1 flex-col print:block">
         <Outlet />
       </main>
     </div>

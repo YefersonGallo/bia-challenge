@@ -289,3 +289,47 @@ func TestAnalyzeWhileRunningReturnsTheSameRun(t *testing.T) {
 		t.Fatalf("second call started %s while %s was running", second.ID, first.ID)
 	}
 }
+
+func TestRouterErrorsUseTheAPIFormat(t *testing.T) {
+	hs := setup(t)
+	var body struct {
+		Error struct{ Code, Message string }
+	}
+	hs.do("GET", "/api/nope", nil, http.StatusNotFound, &body)
+	if body.Error.Code != "NOT_FOUND" {
+		t.Fatalf("unknown route = %+v", body)
+	}
+	hs.do("DELETE", "/api/meters", nil, http.StatusMethodNotAllowed, &body)
+	if body.Error.Code != "METHOD_NOT_ALLOWED" {
+		t.Fatalf("405 = %+v", body)
+	}
+}
+
+func TestBodyLimitAndSecurityHeaders(t *testing.T) {
+	hs := setup(t)
+	big := bytes.Repeat([]byte("a"), httpapi.MaxBody+1)
+	req := httptest.NewRequest("POST", "/api/auth/login", bytes.NewReader(big))
+	rec := httptest.NewRecorder()
+	hs.h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("big body = %d", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	hs.h.ServeHTTP(rec, httptest.NewRequest("GET", "/api/health", nil))
+	for _, h := range []string{"X-Content-Type-Options", "X-Frame-Options", "Referrer-Policy"} {
+		if rec.Header().Get(h) == "" {
+			t.Fatalf("missing %s", h)
+		}
+	}
+}
+
+func TestLoginIsRateLimited(t *testing.T) {
+	hs := setup(t)
+	hs.token = ""
+	bad := map[string]string{"email": "operador@vatio.demo", "password": "wrong"}
+	for i := 0; i < 9; i++ { // setup already logged in once successfully; 10 failures allowed
+		hs.do("POST", "/api/auth/login", bad, http.StatusUnauthorized, nil)
+	}
+	hs.do("POST", "/api/auth/login", bad, http.StatusUnauthorized, nil)
+	hs.do("POST", "/api/auth/login", map[string]string{"email": "operador@vatio.demo", "password": "demo"}, http.StatusTooManyRequests, nil)
+}

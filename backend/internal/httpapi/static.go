@@ -16,7 +16,7 @@ func spa(dir string) http.Handler {
 	index := filepath.Join(dir, "index.html")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
-			writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+			writeError(w, http.StatusNotFound, "NOT_FOUND", "no such API route")
 			return
 		}
 		h := w.Header()

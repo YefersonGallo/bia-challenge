@@ -97,7 +97,15 @@ export function AnomaliesPage() {
                 <tr
                   key={a.id}
                   onClick={() => navigate(`/anomalies/${a.id}`)}
-                  className="grid min-h-[58px] cursor-pointer items-center gap-3.5 border-b border-raise px-4 py-2 hover:bg-panel"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      navigate(`/anomalies/${a.id}`)
+                    }
+                  }}
+                  tabIndex={0}
+                  aria-label={`Abrir investigación de ${a.meter_id}`}
+                  className="grid min-h-[58px] cursor-pointer items-center gap-3.5 border-b border-raise px-4 py-2 hover:bg-panel focus-visible:bg-panel focus-visible:outline-2 focus-visible:outline-accent"
                   style={{ gridTemplateColumns: COLS, opacity: a.status === 'RESOLVED' ? 0.55 : 1 }}
                 >
                   <td>

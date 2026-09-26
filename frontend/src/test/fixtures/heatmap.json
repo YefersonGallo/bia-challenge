@@ -4,7 +4,7 @@
     "name": "Compresor línea 3",
     "status": "CRITICAL",
     "anomaly": {
-      "id": "A-0926-1310-7596-M-109",
+      "id": "A-0926-2323-99bb2edae254-M-109",
       "type": "REAL_ANOMALY",
       "severity": "HIGH",
       "rank": 1,
@@ -173,7 +173,7 @@
     "name": "Subestación B",
     "status": "ALERT",
     "anomaly": {
-      "id": "A-0926-1310-7596-M-112",
+      "id": "A-0926-2323-99bb2edae254-M-112",
       "type": "DATA_QUALITY",
       "severity": "HIGH",
       "rank": 2,
@@ -342,7 +342,7 @@
     "name": "Línea de ensamble 2",
     "status": "ALERT",
     "anomaly": {
-      "id": "A-0926-1310-7596-M-104",
+      "id": "A-0926-2323-99bb2edae254-M-104",
       "type": "EXPLAINABLE_ANOMALY",
       "severity": "MEDIUM",
       "rank": 3,
@@ -511,7 +511,7 @@
     "name": "Horno industrial",
     "status": "OK",
     "anomaly": {
-      "id": "A-0926-1310-7596-M-106",
+      "id": "A-0926-2323-99bb2edae254-M-106",
       "type": "FALSE_POSITIVE",
       "severity": "LOW",
       "rank": 4,

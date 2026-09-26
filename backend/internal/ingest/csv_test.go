@@ -26,7 +26,7 @@ func TestReadReadingsRejectsMissingColumns(t *testing.T) {
 }
 
 func TestReadReadingsReportsBadLine(t *testing.T) {
-	in := "meter_id,timestamp,consumption_kwh\nM-1,not-a-date,1\n"
+	in := "meter_id,timestamp,consumption_kwh,voltage_v,current_a,power_factor\nM-1,not-a-date,1,220,5,0.9\n"
 	_, err := ReadReadings(strings.NewReader(in))
 	if err == nil || !strings.Contains(err.Error(), "line 2") {
 		t.Fatalf("expected a line-numbered error, got %v", err)
@@ -62,5 +62,36 @@ func TestReadEventsOfficialFormat(t *testing.T) {
 	}
 	if len(evs) != 2 || evs[0].ID != "EV-001" || evs[1].Type != "UNKNOWN" || evs[1].Timestamp.Hour() != 14 {
 		t.Fatalf("unexpected events: %+v", evs)
+	}
+}
+
+func TestReadReadingsRequiresEveryValue(t *testing.T) {
+	for name, in := range map[string]string{
+		"missing voltage column": "meter_id,timestamp,consumption_kwh,current_a,power_factor\nM-1,2026-09-01 00:00,1,5,0.9\n",
+		"empty power factor":     "meter_id,timestamp,consumption_kwh,voltage_v,current_a,power_factor\nM-1,2026-09-01 00:00,1,220,5,\n",
+		"empty meter":            "meter_id,timestamp,consumption_kwh,voltage_v,current_a,power_factor\n,2026-09-01 00:00,1,220,5,0.9\n",
+	} {
+		if _, err := ReadReadings(strings.NewReader(in)); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+	_, err := ReadReadings(strings.NewReader("meter_id,timestamp,consumption_kwh,voltage_v,current_a,power_factor\nM-1,2026-09-01 00:00,1,220,5,0.9\nM-1,2026-09-01 01:00,1,,5,0.9\n"))
+	if err == nil || !strings.Contains(err.Error(), "line 3") || !strings.Contains(err.Error(), "voltage_v") {
+		t.Fatalf("empty cell: %v", err)
+	}
+}
+
+func TestReadsSemicolonSeparatedFiles(t *testing.T) {
+	in := "meter_id;timestamp;consumption_kwh;voltage_v;current_a;power_factor\nM-1;2026-09-01 00:00;4,5;220,1;23;0,92\n"
+	rs, err := ReadReadings(strings.NewReader(in))
+	if err != nil || len(rs) != 1 || rs[0].ConsumptionKWh != 4.5 || rs[0].PowerFactor != 0.92 {
+		t.Fatalf("rs = %+v, err = %v", rs, err)
+	}
+}
+
+func TestReadEventsReportsTheLine(t *testing.T) {
+	in := "meter_id,event_timestamp,event_type,description\nM-104,2026-09-11 00:00,OPERATIONAL_CHANGE,ok\nM-109,ayer,UNKNOWN,x\n"
+	if _, err := ReadEvents(strings.NewReader(in)); err == nil || !strings.Contains(err.Error(), "line 3") {
+		t.Fatalf("err = %v", err)
 	}
 }
