@@ -21,9 +21,9 @@ function HeaderKpis() {
     { l: 'CONF.', v: s.avg_confidence == null ? '—' : fmtConf(s.avg_confidence), wide: true },
   ]
   return (
-    <div className="hidden gap-px overflow-hidden rounded border border-line bg-line xl:flex">
+    <div className="hidden gap-px overflow-hidden rounded border border-line bg-line min-[1536px]:flex">
       {items.map((k) => (
-        <div key={k.l} className={cx('flex-col bg-panel-2 px-2.5 py-[3px] whitespace-nowrap', 'wide' in k && k.wide ? 'hidden min-[1440px]:flex' : 'flex')}>
+        <div key={k.l} className={cx('flex-col bg-panel-2 px-2.5 py-[3px] whitespace-nowrap', 'wide' in k && k.wide ? 'hidden min-[1800px]:flex' : 'flex')}>
           <span className="font-mono text-[9px] tracking-[0.1em] text-muted">{k.l}</span>
           <span className="font-mono text-sm font-semibold" style={{ color: k.c }}>
             {k.v}

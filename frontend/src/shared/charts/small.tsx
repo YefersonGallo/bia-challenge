@@ -2,13 +2,33 @@ import { fmtNum } from '@/shared/lib/format'
 import { areaPath, bandPath, extent, linear, linePath, mean } from './geometry'
 
 /** 14-day sparkline with the baseline ±10% band (mean of days 1–7). */
-export function Sparkline({ values, color = 'var(--color-soft)', width = 140, height = 28 }: { values: number[]; color?: string; width?: number; height?: number }) {
+export function Sparkline({
+  values,
+  color = 'var(--color-soft)',
+  width = 140,
+  height = 28,
+  fluid = false,
+}: {
+  values: number[]
+  color?: string
+  width?: number
+  height?: number
+  /** Stretch to the container width instead of a fixed size. */
+  fluid?: boolean
+}) {
   if (values.length < 2) return null
   const base = mean(values.slice(0, 7))
   const y = linear(extent([values, [base * 1.1, base * 0.9]], { pad: 0.1 }), [height - 2, 2])
   const x = linear([0, values.length - 1], [0, width])
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="overflow-visible" aria-hidden>
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      width={fluid ? '100%' : width}
+      height={height}
+      preserveAspectRatio={fluid ? 'none' : undefined}
+      className={fluid ? 'block' : 'overflow-visible'}
+      aria-hidden
+    >
       <path d={bandPath([0, width], [y(base * 1.1), y(base * 1.1)], [y(base * 0.9), y(base * 0.9)])} fill="#141b23" />
       <path d={linePath(values.map((v, i) => [x(i), y(v)]))} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" />
     </svg>
