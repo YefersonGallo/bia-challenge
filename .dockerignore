@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+**/coverage
+**/*.log
+**/expected_results*.csv
+.git
+.env
+.env.*

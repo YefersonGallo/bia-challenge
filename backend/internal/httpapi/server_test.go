@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -153,5 +156,32 @@ func TestExpiredToken(t *testing.T) {
 	}
 	if _, err := a.Verify(tok + "x"); err == nil {
 		t.Fatal("tampered token accepted")
+	}
+}
+
+func TestServesSPAWhenStaticDirIsSet(t *testing.T) {
+	dir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(dir, "index.html"), []byte("<html>vatio</html>"), 0o644)
+	_ = os.MkdirAll(filepath.Join(dir, "assets"), 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "assets", "app.js"), []byte("console.log(1)"), 0o644)
+	hs := setup(t)
+	auth := httpapi.Auth{Secret: []byte("test"), User: "u", Password: "p", TTL: time.Hour}
+	h := httpapi.New(hs.svc, httpapi.Config{Auth: auth, StaticDir: dir})
+	get := func(path string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		return rec
+	}
+	if r := get("/meters/M-109"); r.Code != 200 || !strings.Contains(r.Body.String(), "vatio") {
+		t.Fatalf("SPA route = %d %q", r.Code, r.Body.String())
+	}
+	if r := get("/assets/app.js"); r.Code != 200 || !strings.Contains(r.Header().Get("Cache-Control"), "immutable") {
+		t.Fatalf("asset = %d, cache %q", r.Code, r.Header().Get("Cache-Control"))
+	}
+	if r := get("/api/nope"); r.Code != 401 && r.Code != 404 {
+		t.Fatalf("unknown API route = %d", r.Code)
+	}
+	if r := get("/api/meters"); r.Code != 401 {
+		t.Fatalf("API still requires auth, got %d", r.Code)
 	}
 }

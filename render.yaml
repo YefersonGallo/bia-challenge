@@ -1,0 +1,32 @@
+# Render Blueprint (free plan): one Docker web service + free PostgreSQL.
+# Dashboard → New → Blueprint → pick this repo. Secrets marked sync:false are
+# asked for on the first deploy.
+services:
+  - type: web
+    name: vatio
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vatio-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-5
+      - key: DEMO_PASSWORD
+        sync: false
+      - key: STEP_DELAY_MS
+        value: "450"
+      # The free database expires after 30 days; keep the demo up without it.
+      - key: DB_FALLBACK_MEMORY
+        value: "true"
+
+databases:
+  - name: vatio-db
+    plan: free

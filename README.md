@@ -41,7 +41,9 @@ Así el navegador habla con un solo origen y la `ANTHROPIC_API_KEY` nunca sale d
 
 ### En producción
 
-Dos opciones, con las mismas imágenes:
+**Gratis (Render):** el `Dockerfile` de la raíz construye una sola imagen en la que la API de Go también sirve el frontend (`STATIC_DIR`). `render.yaml` la despliega en el plan gratuito con PostgreSQL gratuito: en Render, New → Blueprint → este repo, y se completan `ANTHROPIC_API_KEY` y `DEMO_PASSWORD`. En el plan gratuito el servicio se duerme tras 15 min sin tráfico y el primer acceso tarda ~1 min. La base gratuita vence a los 30 días; con `DB_FALLBACK_MEMORY=true` la app sigue funcionando en memoria.
+
+De pago, con las imágenes separadas:
 
 - **Railway**: un servicio por Dockerfile, configurado con `backend/railway.toml` y `frontend/railway.toml`, más PostgreSQL gestionado. En el servicio web, `API_UPSTREAM=api.railway.internal:8080`.
 - **VPS**: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`. Añade Caddy con HTTPS automático para el `DOMAIN` definido en `.env`.

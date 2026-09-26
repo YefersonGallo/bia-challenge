@@ -11,6 +11,8 @@
 //	DEMO_USER / DEMO_PASSWORD  demo credentials
 //	CORS_ORIGIN        allowed origin for the SPA (default *)
 //	STEP_DELAY_MS      pause between pipeline steps for the UI (default 450)
+//	STATIC_DIR         serve the built SPA from this directory (single-container deploys)
+//	DB_FALLBACK_MEMORY "true" keeps the app up with the in-memory store if PostgreSQL is unreachable
 package main
 
 import (
@@ -21,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -86,7 +89,7 @@ func run(log *slog.Logger) error {
 		secret = "dev-secret-change-me"
 		log.Warn("AUTH_SECRET not set: using an insecure development secret")
 	}
-	handler := httpapi.New(svc, httpapi.Config{AIProvider: aiProvider,
+	handler := httpapi.New(svc, httpapi.Config{AIProvider: aiProvider, StaticDir: os.Getenv("STATIC_DIR"),
 		Auth:       httpapi.Auth{Secret: []byte(secret), User: env("DEMO_USER", "operador@vatio.demo"), Password: env("DEMO_PASSWORD", "demo"), TTL: 12 * time.Hour},
 		CORSOrigin: env("CORS_ORIGIN", "*"),
 		Logger:     log,
@@ -126,9 +129,29 @@ func openStore(ctx context.Context, log *slog.Logger) (app.Store, error) {
 			return st, nil
 		}
 		lastErr = err
+		// Managed databases on a private network often run without TLS, while
+		// lib/pq defaults to sslmode=require: retry without TLS in that case.
+		if strings.Contains(err.Error(), "SSL is not enabled") && !strings.Contains(dsn, "sslmode=") {
+			dsn = withParam(dsn, "sslmode=disable")
+			log.Info("PostgreSQL has no TLS: retrying with sslmode=disable")
+			continue
+		}
 		time.Sleep(time.Second)
 	}
+	// Free databases can expire (Render deletes them after 30 days): a demo
+	// deploy may opt into keeping the app up with the in-memory store.
+	if os.Getenv("DB_FALLBACK_MEMORY") == "true" {
+		log.Warn("PostgreSQL unreachable: falling back to the in-memory store", "err", lastErr)
+		return memory.New(), nil
+	}
 	return nil, lastErr
+}
+
+func withParam(dsn, kv string) string {
+	if strings.Contains(dsn, "?") {
+		return dsn + "&" + kv
+	}
+	return dsn + "?" + kv
 }
 
 func seed(ctx context.Context, store app.Store, dir string, log *slog.Logger) error {

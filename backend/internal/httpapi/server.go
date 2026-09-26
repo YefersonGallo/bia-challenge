@@ -18,6 +18,7 @@ type Config struct {
 	Auth       Auth
 	CORSOrigin string // "*" or a specific origin; empty disables CORS headers
 	AIProvider string // shown by /api/health: "claude:<model>" or "template"
+	StaticDir  string // when set, the built SPA is served from here (single-container deploys)
 	Logger     *slog.Logger
 }
 
@@ -47,6 +48,9 @@ func New(svc *app.Service, cfg Config) http.Handler {
 	mux.HandleFunc("POST /api/ai/analyze", s.analyze)
 	mux.HandleFunc("GET /api/ai/analysis/{id}", s.getAnalysis)
 	mux.HandleFunc("GET /api/reports/latest", s.report)
+	if cfg.StaticDir != "" {
+		mux.Handle("GET /", spa(cfg.StaticDir))
+	}
 	return chain(mux, s.recoverer, s.logRequests, s.cors, s.authenticate)
 }
 
