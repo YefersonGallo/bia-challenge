@@ -902,7 +902,7 @@ func (e *Engine) matchEvents(meterID string, ep *Episode, events []domain.Event)
 			reasons = append(reasons, fmt.Sprintf("«%s» ocurre a %s h del cambio", ev.Description, fmtNum(diff.Hours(), 0)))
 		case ev.ExpectedEffect() != dir:
 			reasons = append(reasons, fmt.Sprintf("«%s» va en la dirección contraria", ev.Description))
-		case ev.Kind() == domain.EventShutdown && ev.DurationHours() > 0 && math.Abs(ev.DurationHours()-float64(ep.Hours)) > e.cfg.DurationTol:
+		case ev.Kind() == domain.EventShutdown && ev.DurationHours() > 0 && durationMismatch(ev.DurationHours(), ep, e.cfg.DurationTol):
 			reasons = append(reasons, fmt.Sprintf("«%s» dura %s h y el cambio %d h", ev.Description, fmtNum(ev.DurationHours(), 0), ep.Hours))
 		default:
 			if coherent == nil {
@@ -912,6 +912,16 @@ func (e *Engine) matchEvents(meterID string, ep *Episode, events []domain.Event)
 		}
 	}
 	return related, coherent, joinReasons(reasons)
+}
+
+// durationMismatch compares an announced outage duration with the episode. A finished
+// episode must last the announced time ± tol; one still in progress is compatible
+// until it exceeds it (seen hour by hour, a 12 h outage is 6 h long at hour 6).
+func durationMismatch(announced float64, ep *Episode, tol float64) bool {
+	if !ep.Recovered {
+		return float64(ep.Hours) > announced+tol
+	}
+	return math.Abs(announced-float64(ep.Hours)) > tol
 }
 
 func joinReasons(rs []string) string {
