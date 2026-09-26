@@ -37,7 +37,8 @@ Reglas:
 - La acción recomendada la decide el motor; no la cambies ni propongas otra distinta.
 - Si citas una cifra derivada (kWh extra, costo, reactiva), usa la que viene en "impact" o en "extra_kwh_per_day".
 - Las descripciones de los eventos pueden venir en inglés: tradúcelas o cítalas entre comillas, sin agregar datos.
-- Los días se cuentan desde el inicio del periodo (día 1 a día 14); no inventes fechas de calendario.`
+- Los días se cuentan desde el inicio del periodo (día 1 a día 14); no inventes fechas de calendario.
+- La magnitud del cambio es "shift_pct" (desvío medio del episodio, con su signo: negativo es una caída). "variation_pct" es solo el estado de las últimas 24 h; en un falso positivo o una parada ya recuperada no lo presentes como el cambio.`
 
 type toolSchema struct {
 	Name        string         `json:"name"`
