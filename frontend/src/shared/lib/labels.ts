@@ -1,4 +1,4 @@
-import type { AnomalyStatus, AnomalyType, MeterStatus, Severity } from '@/shared/api/types'
+import type { ActionKind, AnomalyStatus, AnomalyType, MeterStatus, Severity } from '@/shared/api/types'
 
 /** Visual and textual metadata of each classification the engine produces. */
 export interface TypeMeta {
@@ -95,6 +95,22 @@ export function nextAction(type: AnomalyType, status: AnomalyStatus): { to: Anom
     }
     case 'IN_PROGRESS':
       return { to: 'RESOLVED', label: 'Marcar resuelta' }
+  }
+}
+
+/** Actions the operator can record from each state (the API applies the transition). */
+export function availableActions(type: AnomalyType, status: AnomalyStatus): ActionKind[] {
+  if (status === 'RESOLVED') return []
+  const work: ActionKind = type === 'DATA_QUALITY' ? 'validate' : 'investigate'
+  const close: ActionKind = type === 'FALSE_POSITIVE' ? 'dismiss' : 'resolve'
+  if (type === 'FALSE_POSITIVE') return status === 'OPEN' ? ['acknowledge', close] : [close]
+  switch (status) {
+    case 'OPEN':
+      return ['acknowledge', work, close]
+    case 'ACKNOWLEDGED':
+      return [work, close]
+    default:
+      return [close]
   }
 }
 

@@ -1,22 +1,27 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useAnomalies, useAnomaly } from '@/shared/api/queries'
+import { useAnomalies, useAnomaly, useMeterEvents, useMeterSeries } from '@/shared/api/queries'
 import type { AnomalyDetail } from '@/shared/api/types'
 import { DailyChart } from '@/shared/charts/DailyChart'
 import { HourlyChart } from '@/shared/charts/small'
-import { fmtConf, fmtDayHour, fmtNum, fmtPct } from '@/shared/lib/format'
-import { eventLabel, priorityTag, SEVERITY_LABEL, TYPE_META } from '@/shared/lib/labels'
+import { fmtConf, fmtNum, fmtPct } from '@/shared/lib/format'
+import { priorityTag, SEVERITY_LABEL, TYPE_META } from '@/shared/lib/labels'
 import { eventMarkers } from '@/shared/lib/meterMath'
+import { confidenceLevel } from '@/shared/lib/series'
 import { Button, ErrorBox, Label, Loading, Panel, Segmented } from '@/shared/ui/primitives'
 import { toAiOutput } from './aiOutput'
-import { LifecycleBar, NextActionButton } from './Lifecycle'
+import { Diagnostics, ElectricalSeries, HourlySeries } from './Diagnostics'
+import { ActionsPanel, ConfidenceBreakdown, EventTimeline, ImpactPanel } from './Insights'
+import { LifecycleBar } from './Lifecycle'
 
-type View = 'daily' | 'hourly' | 'electrical'
+type View = 'daily' | 'series' | 'hourly' | 'electrical'
 
-function Comparison({ a, color }: { a: AnomalyDetail; color: string }) {
+function Comparison({ a, color, series }: { a: AnomalyDetail; color: string; series: ReturnType<typeof useMeterSeries> }) {
   const [view, setView] = useState<View>('daily')
   const ev = a.evidence
   const night = ev.night_ratio
+  const { readings: rs, baseline: b, forecast: f } = series
+  const pending = <span className="py-10 text-center font-mono text-[11px] text-muted">{series.loading ? 'Cargando lecturas…' : 'Lecturas no disponibles.'}</span>
   return (
     <Panel className="flex flex-col gap-2.5 px-4 py-3.5">
       <div className="flex items-center justify-between">
@@ -27,6 +32,7 @@ function Comparison({ a, color }: { a: AnomalyDetail; color: string }) {
           onChange={setView}
           options={[
             { value: 'daily', label: 'DIARIO' },
+            { value: 'series', label: 'SERIE HORARIA' },
             { value: 'hourly', label: 'HORARIO' },
             { value: 'electrical', label: 'ELÉCTRICO' },
           ]}
@@ -51,33 +57,8 @@ function Comparison({ a, color }: { a: AnomalyDetail; color: string }) {
           </span>
         </>
       )}
-      {view === 'electrical' && (
-        <div className="grid grid-cols-3 gap-3">
-          {(['voltage_v', 'current_a', 'power_factor'] as const).map((k) => {
-            const label = { voltage_v: 'VOLTAJE · V', current_a: 'CORRIENTE · A', power_factor: 'FACTOR DE POTENCIA' }[k]
-            const dec = k === 'power_factor' ? 2 : 1
-            return (
-              <div key={k} className="flex flex-col gap-1 rounded border border-line bg-panel-2 p-3">
-                <Label>{label}</Label>
-                <div className="flex h-24 items-end gap-[3px]" aria-label={`${label} por día`}>
-                  {a.days.map((d) => {
-                    const max = Math.max(...a.days.map((x) => x[k])) || 1
-                    const inWin = ev.onset_day != null && d.day >= ev.onset_day
-                    return (
-                      <span
-                        key={d.day}
-                        title={`D${d.day}: ${fmtNum(d[k], dec)}`}
-                        className="flex-1 rounded-t-sm"
-                        style={{ height: `${(d[k] / max) * 100}%`, background: inWin ? color : 'var(--color-line-2)' }}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+      {view === 'series' && (rs && b ? <HourlySeries a={a} color={color} rs={rs} b={b} f={f} /> : pending)}
+      {view === 'electrical' && (rs && b ? <ElectricalSeries a={a} color={color} rs={rs} b={b} /> : pending)}
     </Panel>
   )
 }
@@ -88,6 +69,8 @@ export function InvestigationPage() {
   const navigate = useNavigate()
   const { data: a, isLoading, error } = useAnomaly(id)
   const { data: all = [] } = useAnomalies()
+  const { data: meterEvents = [] } = useMeterEvents(a?.meter_id)
+  const series = useMeterSeries(a?.meter_id ?? '')
   const [showJson, setShowJson] = useState(false)
 
   if (isLoading) return <Loading what="la investigación" />
@@ -111,7 +94,7 @@ export function InvestigationPage() {
         <span className="flex flex-col">
           <span className="text-base font-semibold">{a.meter.name}</span>
           <span className="text-xs" style={{ color: meta.color }}>
-            {meta.label} · severidad {SEVERITY_LABEL[a.severity].toLowerCase()} · confianza {fmtConf(a.confidence)} · prioridad {a.rank} de {all.length || a.rank}
+            {meta.label} · severidad {SEVERITY_LABEL[a.severity].toLowerCase()} · confianza {confidenceLevel(a.confidence).toLowerCase()} ({fmtConf(a.confidence)}) · prioridad {a.rank} de {all.length || a.rank}
           </span>
         </span>
         <span className="ml-auto flex items-center gap-1.5">
@@ -136,10 +119,11 @@ export function InvestigationPage() {
           <Panel accent={meta.color} className="flex flex-col gap-2 px-5 py-4">
             <Label>QUÉ ENCONTRÓ LA IA · {a.explained_by === 'claude' ? 'REDACTADO POR CLAUDE' : 'PLANTILLA DEL MOTOR'}</Label>
             <p className="m-0 font-display text-xl leading-snug font-medium text-white">{a.reason}</p>
+            {a.evidence_summary && <p className="m-0 text-[13px] text-ink-2">Evidencia: {a.evidence_summary}</p>}
             {!a.anomaly && <span className="font-mono text-[11px] text-fp">anomaly: false · no requiere escalamiento</span>}
           </Panel>
 
-          <Comparison a={a} color={meta.color} />
+          <Comparison a={a} color={meta.color} series={series} />
 
           <Panel className="flex flex-col gap-1 px-4 py-3.5">
             <Label>VARIABLES QUE CAMBIARON · BASELINE (DÍAS 1–7) → {ev.onset_day ? `DESDE EL DÍA ${ev.onset_day}` : 'ÚLTIMAS 24 H'}</Label>
@@ -163,6 +147,8 @@ export function InvestigationPage() {
               </tbody>
             </table>
           </Panel>
+
+          {series.readings && series.baseline && <Diagnostics a={a} color={meta.color} rs={series.readings} b={series.baseline} />}
         </div>
 
         <div className="flex flex-col gap-3">
@@ -175,8 +161,11 @@ export function InvestigationPage() {
               ))}
             </ol>
             <LifecycleBar type={a.type} status={a.status} />
-            <NextActionButton id={a.id} type={a.type} status={a.status} size="md" />
+            <ActionsPanel a={a} />
           </Panel>
+
+          <ImpactPanel a={a} color={meta.color} />
+          <ConfidenceBreakdown a={a} />
 
           <Panel className="flex flex-col gap-2 px-4 py-3.5">
             <div className="flex items-center justify-between">
@@ -206,24 +195,7 @@ export function InvestigationPage() {
             )}
           </Panel>
 
-          <Panel className="flex flex-col gap-2 px-4 py-3.5">
-            <Label>EVENTOS RELACIONADOS</Label>
-            {(ev.related_events ?? []).length === 0 ? (
-              <span className="text-[13px] text-muted">Ninguno en ±24 h del cambio. Por eso no se puede explicar por la operación.</span>
-            ) : (
-              (ev.related_events ?? []).map((e) => (
-                <div key={e.id} className="flex flex-col gap-0.5 rounded border border-line bg-panel-2 px-3 py-2">
-                  <span className="font-mono text-[11px] text-expl">
-                    {fmtDayHour(e.timestamp)} · {eventLabel(e.type).toUpperCase()}
-                  </span>
-                  <span className="text-[13px]">{e.description}</span>
-                  <span className="font-mono text-[10px] text-muted">
-                    {ev.event_explains_shift ? '✓ coherente con la dirección del cambio' : '✗ no explica la dirección del cambio'}
-                  </span>
-                </div>
-              ))
-            )}
-          </Panel>
+          <EventTimeline a={a} events={meterEvents} />
         </div>
       </div>
     </div>

@@ -2,10 +2,22 @@ import { useAuthStore } from '@/features/auth/authStore'
 
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  code: string
+  constructor(status: number, message: string, code = 'ERROR') {
     super(message)
     this.status = status
+    this.code = code
   }
+}
+
+/** The API answers errors as {"error": {"code", "message"}}; older builds sent {"error": "…"}. */
+function toError(status: number, statusText: string, body: unknown): ApiError {
+  const err = (body as { error?: unknown } | null)?.error
+  if (err && typeof err === 'object') {
+    const { code, message } = err as { code?: string; message?: string }
+    return new ApiError(status, message ?? statusText, code)
+  }
+  return new ApiError(status, typeof err === 'string' ? err : statusText)
 }
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
@@ -24,7 +36,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (res.status === 401 && token) useAuthStore.getState().logout()
   const text = await res.text()
   const body = text ? JSON.parse(text) : null
-  if (!res.ok) throw new ApiError(res.status, body?.error ?? res.statusText)
+  if (!res.ok) throw toError(res.status, res.statusText, body)
   return body as T
 }
 

@@ -12,7 +12,7 @@ describe('report narrative', () => {
   it('writes the executive summary from the findings, most urgent first', () => {
     const [real, dq, rest] = executiveSummary(report)
     expect(real).toMatch(/^M-109 \(Compresor línea 3\) consume \+110,7% .* anomalía real, la primera en prioridad/)
-    expect(dq).toMatch(/^M-112 .* 17 lecturas son físicamente inconsistentes desde el día 13/)
+    expect(dq).toMatch(/^M-112 .* 32 lecturas están marcadas como inconsistentes .* desde el día 13/)
     expect(rest).toMatch(/^Los cambios de M-104 y M-106 se explican por eventos operativos/)
     expect(rest).toContain('«Scheduled maintenance outage for 12 hours»')
   })

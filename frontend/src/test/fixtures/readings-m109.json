@@ -1,0 +1,1082 @@
+[
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T00:00:00Z",
+  "consumption_kwh": 34.98,
+  "voltage_v": 219.48,
+  "current_a": 152.09,
+  "power_factor": 0.941,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T01:00:00Z",
+  "consumption_kwh": 33.26,
+  "voltage_v": 218.42,
+  "current_a": 150.92,
+  "power_factor": 0.959,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T02:00:00Z",
+  "consumption_kwh": 34.93,
+  "voltage_v": 219.64,
+  "current_a": 148.07,
+  "power_factor": 0.937,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T03:00:00Z",
+  "consumption_kwh": 31.15,
+  "voltage_v": 219.2,
+  "current_a": 145.6,
+  "power_factor": 0.935,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T04:00:00Z",
+  "consumption_kwh": 30.67,
+  "voltage_v": 221.4,
+  "current_a": 151.73,
+  "power_factor": 0.953,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T05:00:00Z",
+  "consumption_kwh": 32.9,
+  "voltage_v": 220.86,
+  "current_a": 145.68,
+  "power_factor": 0.942,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T06:00:00Z",
+  "consumption_kwh": 43.04,
+  "voltage_v": 219.01,
+  "current_a": 199.01,
+  "power_factor": 0.897,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T07:00:00Z",
+  "consumption_kwh": 40.53,
+  "voltage_v": 220.03,
+  "current_a": 194.66,
+  "power_factor": 0.922,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T08:00:00Z",
+  "consumption_kwh": 49.11,
+  "voltage_v": 218.5,
+  "current_a": 234.14,
+  "power_factor": 0.948,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T09:00:00Z",
+  "consumption_kwh": 50.82,
+  "voltage_v": 219.09,
+  "current_a": 233.32,
+  "power_factor": 0.944,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T10:00:00Z",
+  "consumption_kwh": 51.59,
+  "voltage_v": 220.22,
+  "current_a": 235.81,
+  "power_factor": 0.939,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T11:00:00Z",
+  "consumption_kwh": 49.76,
+  "voltage_v": 219.53,
+  "current_a": 233.01,
+  "power_factor": 0.971,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T12:00:00Z",
+  "consumption_kwh": 49.23,
+  "voltage_v": 220.12,
+  "current_a": 233.94,
+  "power_factor": 0.935,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T13:00:00Z",
+  "consumption_kwh": 53.35,
+  "voltage_v": 219.72,
+  "current_a": 234.27,
+  "power_factor": 0.952,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T14:00:00Z",
+  "consumption_kwh": 54.6,
+  "voltage_v": 219.84,
+  "current_a": 239.42,
+  "power_factor": 0.939,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T15:00:00Z",
+  "consumption_kwh": 51.6,
+  "voltage_v": 218.98,
+  "current_a": 235.64,
+  "power_factor": 0.954,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T16:00:00Z",
+  "consumption_kwh": 51.87,
+  "voltage_v": 218.47,
+  "current_a": 235.07,
+  "power_factor": 0.941,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T17:00:00Z",
+  "consumption_kwh": 48.3,
+  "voltage_v": 219.32,
+  "current_a": 233.46,
+  "power_factor": 0.944,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T18:00:00Z",
+  "consumption_kwh": 45.52,
+  "voltage_v": 221.74,
+  "current_a": 194.92,
+  "power_factor": 0.95,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T19:00:00Z",
+  "consumption_kwh": 44.23,
+  "voltage_v": 219.12,
+  "current_a": 198.77,
+  "power_factor": 0.928,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T20:00:00Z",
+  "consumption_kwh": 43.46,
+  "voltage_v": 220.26,
+  "current_a": 193.19,
+  "power_factor": 0.936,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T21:00:00Z",
+  "consumption_kwh": 41.31,
+  "voltage_v": 218.68,
+  "current_a": 198.06,
+  "power_factor": 0.95,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T22:00:00Z",
+  "consumption_kwh": 43.21,
+  "voltage_v": 219,
+  "current_a": 188.46,
+  "power_factor": 0.93,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-10T23:00:00Z",
+  "consumption_kwh": 43.28,
+  "voltage_v": 219.9,
+  "current_a": 192.1,
+  "power_factor": 0.918,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T00:00:00Z",
+  "consumption_kwh": 37.07,
+  "voltage_v": 220.6,
+  "current_a": 151.41,
+  "power_factor": 0.932,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T01:00:00Z",
+  "consumption_kwh": 32.01,
+  "voltage_v": 217.7,
+  "current_a": 156.94,
+  "power_factor": 0.944,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T02:00:00Z",
+  "consumption_kwh": 31.06,
+  "voltage_v": 219.23,
+  "current_a": 149.98,
+  "power_factor": 0.925,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T03:00:00Z",
+  "consumption_kwh": 33.18,
+  "voltage_v": 219.62,
+  "current_a": 143.5,
+  "power_factor": 0.939,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T04:00:00Z",
+  "consumption_kwh": 30.81,
+  "voltage_v": 219.29,
+  "current_a": 155.74,
+  "power_factor": 0.936,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T05:00:00Z",
+  "consumption_kwh": 32.11,
+  "voltage_v": 221.57,
+  "current_a": 150.96,
+  "power_factor": 0.977,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T06:00:00Z",
+  "consumption_kwh": 43.59,
+  "voltage_v": 222.06,
+  "current_a": 196.46,
+  "power_factor": 0.944,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T07:00:00Z",
+  "consumption_kwh": 44.99,
+  "voltage_v": 220.17,
+  "current_a": 195.58,
+  "power_factor": 0.945,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T08:00:00Z",
+  "consumption_kwh": 48.42,
+  "voltage_v": 218.15,
+  "current_a": 236.08,
+  "power_factor": 0.916,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T09:00:00Z",
+  "consumption_kwh": 51.85,
+  "voltage_v": 219.99,
+  "current_a": 231.86,
+  "power_factor": 0.942,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T10:00:00Z",
+  "consumption_kwh": 51.83,
+  "voltage_v": 221.08,
+  "current_a": 232.49,
+  "power_factor": 0.939,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T11:00:00Z",
+  "consumption_kwh": 52.27,
+  "voltage_v": 219.79,
+  "current_a": 231.61,
+  "power_factor": 0.956,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T12:00:00Z",
+  "consumption_kwh": 53.17,
+  "voltage_v": 219.35,
+  "current_a": 232.81,
+  "power_factor": 0.925,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T13:00:00Z",
+  "consumption_kwh": 50.4,
+  "voltage_v": 219.83,
+  "current_a": 231,
+  "power_factor": 0.949,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T14:00:00Z",
+  "consumption_kwh": 50.19,
+  "voltage_v": 219.74,
+  "current_a": 234.93,
+  "power_factor": 0.956,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T15:00:00Z",
+  "consumption_kwh": 50.48,
+  "voltage_v": 218.98,
+  "current_a": 233.47,
+  "power_factor": 0.923,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T16:00:00Z",
+  "consumption_kwh": 52.42,
+  "voltage_v": 220.07,
+  "current_a": 234.79,
+  "power_factor": 0.959,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T17:00:00Z",
+  "consumption_kwh": 53.78,
+  "voltage_v": 220.78,
+  "current_a": 230.26,
+  "power_factor": 0.943,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T18:00:00Z",
+  "consumption_kwh": 41.54,
+  "voltage_v": 217.93,
+  "current_a": 194.18,
+  "power_factor": 0.962,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T19:00:00Z",
+  "consumption_kwh": 43.2,
+  "voltage_v": 219.3,
+  "current_a": 190.6,
+  "power_factor": 0.914,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T20:00:00Z",
+  "consumption_kwh": 41.79,
+  "voltage_v": 218.41,
+  "current_a": 191.75,
+  "power_factor": 0.952,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T21:00:00Z",
+  "consumption_kwh": 44.49,
+  "voltage_v": 219.63,
+  "current_a": 193.12,
+  "power_factor": 0.947,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T22:00:00Z",
+  "consumption_kwh": 42.29,
+  "voltage_v": 219.22,
+  "current_a": 189.95,
+  "power_factor": 0.936,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-11T23:00:00Z",
+  "consumption_kwh": 42.74,
+  "voltage_v": 220.25,
+  "current_a": 193.23,
+  "power_factor": 0.917,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T00:00:00Z",
+  "consumption_kwh": 34.25,
+  "voltage_v": 223.06,
+  "current_a": 151.21,
+  "power_factor": 0.934,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T01:00:00Z",
+  "consumption_kwh": 33.67,
+  "voltage_v": 220.23,
+  "current_a": 159.69,
+  "power_factor": 0.939,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T02:00:00Z",
+  "consumption_kwh": 31.44,
+  "voltage_v": 218.61,
+  "current_a": 155.78,
+  "power_factor": 0.946,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T03:00:00Z",
+  "consumption_kwh": 32.31,
+  "voltage_v": 218.29,
+  "current_a": 150.63,
+  "power_factor": 0.96,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T04:00:00Z",
+  "consumption_kwh": 32.65,
+  "voltage_v": 221.5,
+  "current_a": 147.55,
+  "power_factor": 0.932,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T05:00:00Z",
+  "consumption_kwh": 33.69,
+  "voltage_v": 220.57,
+  "current_a": 153.72,
+  "power_factor": 0.907,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T06:00:00Z",
+  "consumption_kwh": 43.5,
+  "voltage_v": 219.61,
+  "current_a": 192.9,
+  "power_factor": 0.938,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T07:00:00Z",
+  "consumption_kwh": 39.58,
+  "voltage_v": 218.36,
+  "current_a": 193.78,
+  "power_factor": 0.936,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T08:00:00Z",
+  "consumption_kwh": 51.79,
+  "voltage_v": 219.02,
+  "current_a": 238.42,
+  "power_factor": 0.962,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T09:00:00Z",
+  "consumption_kwh": 53.13,
+  "voltage_v": 218.67,
+  "current_a": 233.91,
+  "power_factor": 0.918,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T10:00:00Z",
+  "consumption_kwh": 51.98,
+  "voltage_v": 221.44,
+  "current_a": 232.99,
+  "power_factor": 0.93,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T11:00:00Z",
+  "consumption_kwh": 49.99,
+  "voltage_v": 219.18,
+  "current_a": 235.9,
+  "power_factor": 0.94,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T12:00:00Z",
+  "consumption_kwh": 53.2,
+  "voltage_v": 220.15,
+  "current_a": 235.55,
+  "power_factor": 0.943,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T13:00:00Z",
+  "consumption_kwh": 48.64,
+  "voltage_v": 220.19,
+  "current_a": 236.38,
+  "power_factor": 0.953,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T14:00:00Z",
+  "consumption_kwh": 110.35,
+  "voltage_v": 218.24,
+  "current_a": 492.65,
+  "power_factor": 0.736,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T15:00:00Z",
+  "consumption_kwh": 109.07,
+  "voltage_v": 217.55,
+  "current_a": 491.96,
+  "power_factor": 0.734,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T16:00:00Z",
+  "consumption_kwh": 114.07,
+  "voltage_v": 218.05,
+  "current_a": 506.63,
+  "power_factor": 0.763,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T17:00:00Z",
+  "consumption_kwh": 102.7,
+  "voltage_v": 216.61,
+  "current_a": 484.97,
+  "power_factor": 0.741,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T18:00:00Z",
+  "consumption_kwh": 88.16,
+  "voltage_v": 218.38,
+  "current_a": 395.37,
+  "power_factor": 0.772,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T19:00:00Z",
+  "consumption_kwh": 93.45,
+  "voltage_v": 217.27,
+  "current_a": 412.56,
+  "power_factor": 0.727,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T20:00:00Z",
+  "consumption_kwh": 89.13,
+  "voltage_v": 216.58,
+  "current_a": 418.99,
+  "power_factor": 0.733,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T21:00:00Z",
+  "consumption_kwh": 92.83,
+  "voltage_v": 215.98,
+  "current_a": 413.11,
+  "power_factor": 0.736,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T22:00:00Z",
+  "consumption_kwh": 87.08,
+  "voltage_v": 218.32,
+  "current_a": 406.16,
+  "power_factor": 0.728,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-12T23:00:00Z",
+  "consumption_kwh": 92.76,
+  "voltage_v": 219.79,
+  "current_a": 406.36,
+  "power_factor": 0.745,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T00:00:00Z",
+  "consumption_kwh": 69.21,
+  "voltage_v": 216.6,
+  "current_a": 321.14,
+  "power_factor": 0.713,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T01:00:00Z",
+  "consumption_kwh": 68.69,
+  "voltage_v": 215.09,
+  "current_a": 315.91,
+  "power_factor": 0.739,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T02:00:00Z",
+  "consumption_kwh": 62.17,
+  "voltage_v": 217.29,
+  "current_a": 315.33,
+  "power_factor": 0.741,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T03:00:00Z",
+  "consumption_kwh": 68.08,
+  "voltage_v": 216.06,
+  "current_a": 316.98,
+  "power_factor": 0.74,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T04:00:00Z",
+  "consumption_kwh": 69.76,
+  "voltage_v": 217.32,
+  "current_a": 311.85,
+  "power_factor": 0.744,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T05:00:00Z",
+  "consumption_kwh": 68.96,
+  "voltage_v": 216.83,
+  "current_a": 332.77,
+  "power_factor": 0.736,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T06:00:00Z",
+  "consumption_kwh": 87.36,
+  "voltage_v": 217.82,
+  "current_a": 399.6,
+  "power_factor": 0.73,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T07:00:00Z",
+  "consumption_kwh": 86.84,
+  "voltage_v": 215.82,
+  "current_a": 402.33,
+  "power_factor": 0.714,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T08:00:00Z",
+  "consumption_kwh": 106.54,
+  "voltage_v": 217.24,
+  "current_a": 499.42,
+  "power_factor": 0.763,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T09:00:00Z",
+  "consumption_kwh": 110.87,
+  "voltage_v": 219.26,
+  "current_a": 497.22,
+  "power_factor": 0.739,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T10:00:00Z",
+  "consumption_kwh": 108.42,
+  "voltage_v": 218.85,
+  "current_a": 493.85,
+  "power_factor": 0.74,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T11:00:00Z",
+  "consumption_kwh": 105.88,
+  "voltage_v": 216.02,
+  "current_a": 497.62,
+  "power_factor": 0.748,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T12:00:00Z",
+  "consumption_kwh": 109.67,
+  "voltage_v": 217.68,
+  "current_a": 492.73,
+  "power_factor": 0.718,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T13:00:00Z",
+  "consumption_kwh": 108.77,
+  "voltage_v": 220.43,
+  "current_a": 491,
+  "power_factor": 0.742,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T14:00:00Z",
+  "consumption_kwh": 106.06,
+  "voltage_v": 218.57,
+  "current_a": 485.24,
+  "power_factor": 0.735,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T15:00:00Z",
+  "consumption_kwh": 105.37,
+  "voltage_v": 217.78,
+  "current_a": 496.04,
+  "power_factor": 0.75,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T16:00:00Z",
+  "consumption_kwh": 108.26,
+  "voltage_v": 217.28,
+  "current_a": 494.92,
+  "power_factor": 0.745,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T17:00:00Z",
+  "consumption_kwh": 109.71,
+  "voltage_v": 217.07,
+  "current_a": 500.82,
+  "power_factor": 0.728,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T18:00:00Z",
+  "consumption_kwh": 88.36,
+  "voltage_v": 214.86,
+  "current_a": 410.47,
+  "power_factor": 0.713,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T19:00:00Z",
+  "consumption_kwh": 92.15,
+  "voltage_v": 215.48,
+  "current_a": 415.3,
+  "power_factor": 0.742,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T20:00:00Z",
+  "consumption_kwh": 87.45,
+  "voltage_v": 217.37,
+  "current_a": 404.08,
+  "power_factor": 0.721,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T21:00:00Z",
+  "consumption_kwh": 84.92,
+  "voltage_v": 216.83,
+  "current_a": 403.82,
+  "power_factor": 0.723,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T22:00:00Z",
+  "consumption_kwh": 91.69,
+  "voltage_v": 216.49,
+  "current_a": 403.09,
+  "power_factor": 0.744,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-13T23:00:00Z",
+  "consumption_kwh": 88.41,
+  "voltage_v": 215.88,
+  "current_a": 411,
+  "power_factor": 0.719,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T00:00:00Z",
+  "consumption_kwh": 68.45,
+  "voltage_v": 215.51,
+  "current_a": 317.9,
+  "power_factor": 0.719,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T01:00:00Z",
+  "consumption_kwh": 70.2,
+  "voltage_v": 215.26,
+  "current_a": 312.75,
+  "power_factor": 0.754,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T02:00:00Z",
+  "consumption_kwh": 67.3,
+  "voltage_v": 217.03,
+  "current_a": 324.76,
+  "power_factor": 0.744,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T03:00:00Z",
+  "consumption_kwh": 68.8,
+  "voltage_v": 215.64,
+  "current_a": 300.79,
+  "power_factor": 0.738,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T04:00:00Z",
+  "consumption_kwh": 70.85,
+  "voltage_v": 216.94,
+  "current_a": 306.25,
+  "power_factor": 0.723,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T05:00:00Z",
+  "consumption_kwh": 70.39,
+  "voltage_v": 217.89,
+  "current_a": 317.4,
+  "power_factor": 0.756,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T06:00:00Z",
+  "consumption_kwh": 90.51,
+  "voltage_v": 216.58,
+  "current_a": 411.14,
+  "power_factor": 0.782,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T07:00:00Z",
+  "consumption_kwh": 84.52,
+  "voltage_v": 218.08,
+  "current_a": 402.4,
+  "power_factor": 0.751,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T08:00:00Z",
+  "consumption_kwh": 109.93,
+  "voltage_v": 214.5,
+  "current_a": 498.17,
+  "power_factor": 0.764,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T09:00:00Z",
+  "consumption_kwh": 107.46,
+  "voltage_v": 214.56,
+  "current_a": 501.77,
+  "power_factor": 0.744,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T10:00:00Z",
+  "consumption_kwh": 106.18,
+  "voltage_v": 217.38,
+  "current_a": 497.52,
+  "power_factor": 0.745,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T11:00:00Z",
+  "consumption_kwh": 104.41,
+  "voltage_v": 216.78,
+  "current_a": 493.56,
+  "power_factor": 0.747,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T12:00:00Z",
+  "consumption_kwh": 111.72,
+  "voltage_v": 215.47,
+  "current_a": 494.87,
+  "power_factor": 0.742,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T13:00:00Z",
+  "consumption_kwh": 117.51,
+  "voltage_v": 213.43,
+  "current_a": 504.29,
+  "power_factor": 0.741,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T14:00:00Z",
+  "consumption_kwh": 111.52,
+  "voltage_v": 216.45,
+  "current_a": 492.77,
+  "power_factor": 0.736,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T15:00:00Z",
+  "consumption_kwh": 110.16,
+  "voltage_v": 218.43,
+  "current_a": 486.68,
+  "power_factor": 0.739,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T16:00:00Z",
+  "consumption_kwh": 104.85,
+  "voltage_v": 215.15,
+  "current_a": 501,
+  "power_factor": 0.732,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T17:00:00Z",
+  "consumption_kwh": 106.15,
+  "voltage_v": 216.18,
+  "current_a": 507.43,
+  "power_factor": 0.708,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T18:00:00Z",
+  "consumption_kwh": 86.79,
+  "voltage_v": 217.94,
+  "current_a": 408.59,
+  "power_factor": 0.774,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T19:00:00Z",
+  "consumption_kwh": 93.89,
+  "voltage_v": 215.93,
+  "current_a": 406.9,
+  "power_factor": 0.764,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T20:00:00Z",
+  "consumption_kwh": 87.56,
+  "voltage_v": 216.5,
+  "current_a": 401.57,
+  "power_factor": 0.721,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T21:00:00Z",
+  "consumption_kwh": 87.21,
+  "voltage_v": 217.88,
+  "current_a": 404.25,
+  "power_factor": 0.734,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T22:00:00Z",
+  "consumption_kwh": 84.35,
+  "voltage_v": 217.25,
+  "current_a": 395.62,
+  "power_factor": 0.741,
+  "status": "OK"
+ },
+ {
+  "meter_id": "M-109",
+  "timestamp": "2026-09-14T23:00:00Z",
+  "consumption_kwh": 86.89,
+  "voltage_v": 217.47,
+  "current_a": 402.78,
+  "power_factor": 0.761,
+  "status": "OK"
+ }
+]

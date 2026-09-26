@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAnalysisRun, useAnomalies } from '@/shared/api/queries'
 import type { AnomalyType, Severity } from '@/shared/api/types'
 import { fmtConf, fmtTime } from '@/shared/lib/format'
+import { confidenceLevel } from '@/shared/lib/series'
 import { lifecycleLabels, priorityTag, SEVERITY_LABEL, TYPE_META } from '@/shared/lib/labels'
 import { Button, EmptyState, ErrorBox, Label, Loading, Segmented } from '@/shared/ui/primitives'
 import { useAnalysis } from '@/features/analysis/useAnalysis'
@@ -113,7 +114,10 @@ export function AnomaliesPage() {
                     <span className="relative block h-1.5 w-[70px] rounded-sm bg-raise">
                       <span className="absolute inset-y-0 left-0 rounded-sm" style={{ width: `${a.confidence * 100}%`, background: meta.color }} />
                     </span>
-                    <span className="font-mono text-xs">{fmtConf(a.confidence)}</span>
+                    <span className="flex flex-col leading-tight">
+                      <span className="text-xs font-semibold">{confidenceLevel(a.confidence)}</span>
+                      <span className="font-mono text-[10px] text-muted">{fmtConf(a.confidence)}</span>
+                    </span>
                   </td>
                   <td className="line-clamp-2 text-[13px] text-ink-2">{a.reason}</td>
                   <td className="font-mono text-[11px] text-muted uppercase">{lifecycleLabels(a.type)[a.status]}</td>

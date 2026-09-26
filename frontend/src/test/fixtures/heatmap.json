@@ -1,0 +1,1974 @@
+[
+  {
+    "meter_id": "M-109",
+    "name": "Compresor línea 3",
+    "status": "CRITICAL",
+    "anomaly": {
+      "id": "A-0926-1310-7596-M-109",
+      "type": "REAL_ANOMALY",
+      "severity": "HIGH",
+      "rank": 1,
+      "confidence": 0.97,
+      "status": "OPEN"
+    },
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 1052.15,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 0.4,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 199.56,
+        "power_factor": 0.936
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 1055.91,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 0.8,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 201.09,
+        "power_factor": 0.938
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 1054.57,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 0.7,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 201.46,
+        "power_factor": 0.945
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 1061.64,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 1.3,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 200.85,
+        "power_factor": 0.939
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 1048.16,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 219.5,
+        "current_a": 200.8,
+        "power_factor": 0.939
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 1029.64,
+        "expected_kwh": 1047.74,
+        "deviation_pct": -1.7,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 199.4,
+        "power_factor": 0.943
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 1039.49,
+        "expected_kwh": 1047.74,
+        "deviation_pct": -0.8,
+        "invalid": 0,
+        "voltage_v": 219.5,
+        "current_a": 200.03,
+        "power_factor": 0.937
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 1039.89,
+        "expected_kwh": 1047.74,
+        "deviation_pct": -0.7,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 200.11,
+        "power_factor": 0.944
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 1065.59,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 1.7,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 201.21,
+        "power_factor": 0.94
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 1052.7,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 0.5,
+        "invalid": 0,
+        "voltage_v": 219.6,
+        "current_a": 200.06,
+        "power_factor": 0.94
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 1055.68,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 0.8,
+        "invalid": 0,
+        "voltage_v": 219.7,
+        "current_a": 199.28,
+        "power_factor": 0.941
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 1569.42,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 49.8,
+        "invalid": 0,
+        "voltage_v": 219,
+        "current_a": 297.8,
+        "power_factor": 0.856
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 2193.6,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 109.4,
+        "invalid": 0,
+        "voltage_v": 217.1,
+        "current_a": 421.36,
+        "power_factor": 0.734
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 2207.6,
+        "expected_kwh": 1047.74,
+        "deviation_pct": 110.7,
+        "invalid": 0,
+        "voltage_v": 216.4,
+        "current_a": 420.47,
+        "power_factor": 0.744
+      }
+    ]
+  },
+  {
+    "meter_id": "M-112",
+    "name": "Subestación B",
+    "status": "ALERT",
+    "anomaly": {
+      "id": "A-0926-1310-7596-M-112",
+      "type": "DATA_QUALITY",
+      "severity": "HIGH",
+      "rank": 2,
+      "confidence": 0.97,
+      "status": "OPEN"
+    },
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 658.58,
+        "expected_kwh": 659.53,
+        "deviation_pct": -0.1,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 125.89,
+        "power_factor": 0.952
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 656.95,
+        "expected_kwh": 659.53,
+        "deviation_pct": -0.4,
+        "invalid": 0,
+        "voltage_v": 221,
+        "current_a": 125.36,
+        "power_factor": 0.947
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 667.6,
+        "expected_kwh": 659.53,
+        "deviation_pct": 1.2,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 126.21,
+        "power_factor": 0.95
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 667.32,
+        "expected_kwh": 659.53,
+        "deviation_pct": 1.2,
+        "invalid": 0,
+        "voltage_v": 221.2,
+        "current_a": 125.15,
+        "power_factor": 0.952
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 662.84,
+        "expected_kwh": 659.53,
+        "deviation_pct": 0.5,
+        "invalid": 0,
+        "voltage_v": 220.6,
+        "current_a": 126.28,
+        "power_factor": 0.954
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 657.74,
+        "expected_kwh": 659.53,
+        "deviation_pct": -0.3,
+        "invalid": 0,
+        "voltage_v": 220.7,
+        "current_a": 125.99,
+        "power_factor": 0.948
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 664.08,
+        "expected_kwh": 659.53,
+        "deviation_pct": 0.7,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 125.17,
+        "power_factor": 0.958
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 657.78,
+        "expected_kwh": 659.53,
+        "deviation_pct": -0.3,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 125.46,
+        "power_factor": 0.949
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 653,
+        "expected_kwh": 659.53,
+        "deviation_pct": -1,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 126.29,
+        "power_factor": 0.951
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 662.43,
+        "expected_kwh": 659.53,
+        "deviation_pct": 0.4,
+        "invalid": 0,
+        "voltage_v": 220.8,
+        "current_a": 126.02,
+        "power_factor": 0.954
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 654.55,
+        "expected_kwh": 659.53,
+        "deviation_pct": -0.8,
+        "invalid": 0,
+        "voltage_v": 221.2,
+        "current_a": 125.96,
+        "power_factor": 0.947
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 668.34,
+        "expected_kwh": 659.53,
+        "deviation_pct": 1.3,
+        "invalid": 1,
+        "voltage_v": 221.3,
+        "current_a": 127.77,
+        "power_factor": 0.945
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 662.42,
+        "expected_kwh": 659.53,
+        "deviation_pct": 0.4,
+        "invalid": 16,
+        "voltage_v": 220.9,
+        "current_a": 123.66,
+        "power_factor": 0.946
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 662.65,
+        "expected_kwh": 659.53,
+        "deviation_pct": 0.5,
+        "invalid": 15,
+        "voltage_v": 223.1,
+        "current_a": 120.67,
+        "power_factor": 0.947
+      }
+    ]
+  },
+  {
+    "meter_id": "M-104",
+    "name": "Línea de ensamble 2",
+    "status": "ALERT",
+    "anomaly": {
+      "id": "A-0926-1310-7596-M-104",
+      "type": "EXPLAINABLE_ANOMALY",
+      "severity": "MEDIUM",
+      "rank": 3,
+      "confidence": 0.88,
+      "status": "OPEN"
+    },
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 1173.77,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 0.3,
+        "invalid": 0,
+        "voltage_v": 219.8,
+        "current_a": 219.9,
+        "power_factor": 0.906
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 1180.73,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 0.9,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 218.87,
+        "power_factor": 0.913
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 1164.48,
+        "expected_kwh": 1170.32,
+        "deviation_pct": -0.5,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 219.7,
+        "power_factor": 0.913
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 1159.36,
+        "expected_kwh": 1170.32,
+        "deviation_pct": -0.9,
+        "invalid": 0,
+        "voltage_v": 219.8,
+        "current_a": 219.37,
+        "power_factor": 0.905
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 1172.3,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 0.2,
+        "invalid": 0,
+        "voltage_v": 220.2,
+        "current_a": 218.97,
+        "power_factor": 0.906
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 1171.71,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 0.1,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 218.97,
+        "power_factor": 0.918
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 1165.35,
+        "expected_kwh": 1170.32,
+        "deviation_pct": -0.4,
+        "invalid": 0,
+        "voltage_v": 219.8,
+        "current_a": 218.15,
+        "power_factor": 0.91
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 1169.83,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 219.45,
+        "power_factor": 0.906
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 1162.42,
+        "expected_kwh": 1170.32,
+        "deviation_pct": -0.7,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 218.25,
+        "power_factor": 0.905
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 1164.99,
+        "expected_kwh": 1170.32,
+        "deviation_pct": -0.5,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 219.5,
+        "power_factor": 0.907
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 1706.43,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 45.8,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 322.09,
+        "power_factor": 0.886
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 1708.21,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 46,
+        "invalid": 0,
+        "voltage_v": 220.2,
+        "current_a": 323.01,
+        "power_factor": 0.89
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 1718.59,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 46.8,
+        "invalid": 0,
+        "voltage_v": 220.2,
+        "current_a": 321.72,
+        "power_factor": 0.89
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 1725.63,
+        "expected_kwh": 1170.32,
+        "deviation_pct": 47.4,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 324.7,
+        "power_factor": 0.893
+      }
+    ]
+  },
+  {
+    "meter_id": "M-106",
+    "name": "Horno industrial",
+    "status": "OK",
+    "anomaly": {
+      "id": "A-0926-1310-7596-M-106",
+      "type": "FALSE_POSITIVE",
+      "severity": "LOW",
+      "rank": 4,
+      "confidence": 0.75,
+      "status": "OPEN"
+    },
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 1360.06,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 1,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 256.37,
+        "power_factor": 0.927
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 1329.75,
+        "expected_kwh": 1346.98,
+        "deviation_pct": -1.3,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 257.81,
+        "power_factor": 0.917
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 1349.32,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 0.2,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 257.55,
+        "power_factor": 0.919
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 1371.65,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 1.8,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 257.96,
+        "power_factor": 0.92
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 1349.12,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 0.2,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 257.56,
+        "power_factor": 0.925
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 1348.29,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 0.1,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 257.59,
+        "power_factor": 0.919
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 1335.56,
+        "expected_kwh": 1346.98,
+        "deviation_pct": -0.8,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 256.96,
+        "power_factor": 0.922
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 852.43,
+        "expected_kwh": 1346.98,
+        "deviation_pct": -36.7,
+        "invalid": 0,
+        "voltage_v": 219.5,
+        "current_a": 161.65,
+        "power_factor": 0.916
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 1347.38,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 219.7,
+        "current_a": 257.86,
+        "power_factor": 0.917
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 1358.93,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 0.9,
+        "invalid": 0,
+        "voltage_v": 219.7,
+        "current_a": 257.62,
+        "power_factor": 0.915
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 1338.13,
+        "expected_kwh": 1346.98,
+        "deviation_pct": -0.7,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 257.12,
+        "power_factor": 0.915
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 1347.86,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 0.1,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 257.38,
+        "power_factor": 0.917
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 1325.85,
+        "expected_kwh": 1346.98,
+        "deviation_pct": -1.6,
+        "invalid": 0,
+        "voltage_v": 220.2,
+        "current_a": 257.03,
+        "power_factor": 0.919
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 1362.11,
+        "expected_kwh": 1346.98,
+        "deviation_pct": 1.1,
+        "invalid": 0,
+        "voltage_v": 220.4,
+        "current_a": 257.02,
+        "power_factor": 0.918
+      }
+    ]
+  },
+  {
+    "meter_id": "M-103",
+    "name": "HVAC oficinas",
+    "status": "OK",
+    "anomaly": null,
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 601.81,
+        "expected_kwh": 591.64,
+        "deviation_pct": 1.7,
+        "invalid": 0,
+        "voltage_v": 222.1,
+        "current_a": 112.77,
+        "power_factor": 0.959
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 584.76,
+        "expected_kwh": 591.64,
+        "deviation_pct": -1.2,
+        "invalid": 0,
+        "voltage_v": 222.3,
+        "current_a": 113.4,
+        "power_factor": 0.961
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 594.99,
+        "expected_kwh": 591.64,
+        "deviation_pct": 0.6,
+        "invalid": 0,
+        "voltage_v": 221.9,
+        "current_a": 113.49,
+        "power_factor": 0.962
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 591.35,
+        "expected_kwh": 591.64,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 222.4,
+        "current_a": 114.82,
+        "power_factor": 0.959
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 598.74,
+        "expected_kwh": 591.64,
+        "deviation_pct": 1.2,
+        "invalid": 0,
+        "voltage_v": 222.3,
+        "current_a": 113.85,
+        "power_factor": 0.959
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 597.48,
+        "expected_kwh": 591.64,
+        "deviation_pct": 1,
+        "invalid": 0,
+        "voltage_v": 222,
+        "current_a": 112.78,
+        "power_factor": 0.961
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 592.76,
+        "expected_kwh": 591.64,
+        "deviation_pct": 0.2,
+        "invalid": 0,
+        "voltage_v": 221.8,
+        "current_a": 113.2,
+        "power_factor": 0.962
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 600.41,
+        "expected_kwh": 591.64,
+        "deviation_pct": 1.5,
+        "invalid": 0,
+        "voltage_v": 221.7,
+        "current_a": 113,
+        "power_factor": 0.96
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 595.95,
+        "expected_kwh": 591.64,
+        "deviation_pct": 0.7,
+        "invalid": 0,
+        "voltage_v": 222.2,
+        "current_a": 114.54,
+        "power_factor": 0.955
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 603.05,
+        "expected_kwh": 591.64,
+        "deviation_pct": 1.9,
+        "invalid": 0,
+        "voltage_v": 221.8,
+        "current_a": 114.74,
+        "power_factor": 0.96
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 594.72,
+        "expected_kwh": 591.64,
+        "deviation_pct": 0.5,
+        "invalid": 0,
+        "voltage_v": 221.8,
+        "current_a": 113.81,
+        "power_factor": 0.961
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 600.66,
+        "expected_kwh": 591.64,
+        "deviation_pct": 1.5,
+        "invalid": 0,
+        "voltage_v": 222,
+        "current_a": 112.96,
+        "power_factor": 0.959
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 575.76,
+        "expected_kwh": 591.64,
+        "deviation_pct": -2.7,
+        "invalid": 0,
+        "voltage_v": 221.5,
+        "current_a": 113.17,
+        "power_factor": 0.962
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 602.39,
+        "expected_kwh": 591.64,
+        "deviation_pct": 1.8,
+        "invalid": 0,
+        "voltage_v": 221.6,
+        "current_a": 113.81,
+        "power_factor": 0.958
+      }
+    ]
+  },
+  {
+    "meter_id": "M-105",
+    "name": "Cuarto frío",
+    "status": "OK",
+    "anomaly": null,
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 873.7,
+        "expected_kwh": 873.44,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 219.6,
+        "current_a": 164.67,
+        "power_factor": 0.941
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 867.92,
+        "expected_kwh": 873.44,
+        "deviation_pct": -0.6,
+        "invalid": 0,
+        "voltage_v": 220.4,
+        "current_a": 163.84,
+        "power_factor": 0.932
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 867.75,
+        "expected_kwh": 873.44,
+        "deviation_pct": -0.7,
+        "invalid": 0,
+        "voltage_v": 220.2,
+        "current_a": 164.44,
+        "power_factor": 0.936
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 871.18,
+        "expected_kwh": 873.44,
+        "deviation_pct": -0.3,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 164.81,
+        "power_factor": 0.938
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 873.69,
+        "expected_kwh": 873.44,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 163.84,
+        "power_factor": 0.944
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 881.71,
+        "expected_kwh": 873.44,
+        "deviation_pct": 0.9,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 164.86,
+        "power_factor": 0.944
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 866.5,
+        "expected_kwh": 873.44,
+        "deviation_pct": -0.8,
+        "invalid": 0,
+        "voltage_v": 219.7,
+        "current_a": 164.18,
+        "power_factor": 0.938
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 880.12,
+        "expected_kwh": 873.44,
+        "deviation_pct": 0.8,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 162.24,
+        "power_factor": 0.942
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 874.1,
+        "expected_kwh": 873.44,
+        "deviation_pct": 0.1,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 163.58,
+        "power_factor": 0.938
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 881.96,
+        "expected_kwh": 873.44,
+        "deviation_pct": 1,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 164.66,
+        "power_factor": 0.937
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 873.16,
+        "expected_kwh": 873.44,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 220.5,
+        "current_a": 164.48,
+        "power_factor": 0.935
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 876.38,
+        "expected_kwh": 873.44,
+        "deviation_pct": 0.3,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 164.87,
+        "power_factor": 0.942
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 868.96,
+        "expected_kwh": 873.44,
+        "deviation_pct": -0.5,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 162.6,
+        "power_factor": 0.943
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 861.31,
+        "expected_kwh": 873.44,
+        "deviation_pct": -1.4,
+        "invalid": 0,
+        "voltage_v": 219.8,
+        "current_a": 163.42,
+        "power_factor": 0.939
+      }
+    ]
+  },
+  {
+    "meter_id": "M-107",
+    "name": "Bombas de agua",
+    "status": "OK",
+    "anomaly": null,
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 477.71,
+        "expected_kwh": 481.24,
+        "deviation_pct": -0.7,
+        "invalid": 0,
+        "voltage_v": 221.4,
+        "current_a": 90.92,
+        "power_factor": 0.956
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 479.99,
+        "expected_kwh": 481.24,
+        "deviation_pct": -0.3,
+        "invalid": 0,
+        "voltage_v": 221,
+        "current_a": 90.78,
+        "power_factor": 0.951
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 482.79,
+        "expected_kwh": 481.24,
+        "deviation_pct": 0.3,
+        "invalid": 0,
+        "voltage_v": 220.8,
+        "current_a": 91.61,
+        "power_factor": 0.954
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 477.18,
+        "expected_kwh": 481.24,
+        "deviation_pct": -0.8,
+        "invalid": 0,
+        "voltage_v": 221.5,
+        "current_a": 92.02,
+        "power_factor": 0.951
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 479.04,
+        "expected_kwh": 481.24,
+        "deviation_pct": -0.5,
+        "invalid": 0,
+        "voltage_v": 220.9,
+        "current_a": 92.65,
+        "power_factor": 0.949
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 475.16,
+        "expected_kwh": 481.24,
+        "deviation_pct": -1.3,
+        "invalid": 0,
+        "voltage_v": 221,
+        "current_a": 91.66,
+        "power_factor": 0.949
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 480.03,
+        "expected_kwh": 481.24,
+        "deviation_pct": -0.3,
+        "invalid": 0,
+        "voltage_v": 221,
+        "current_a": 91.34,
+        "power_factor": 0.951
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 488.45,
+        "expected_kwh": 481.24,
+        "deviation_pct": 1.5,
+        "invalid": 0,
+        "voltage_v": 220.8,
+        "current_a": 91.47,
+        "power_factor": 0.949
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 481.56,
+        "expected_kwh": 481.24,
+        "deviation_pct": 0.1,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 92.07,
+        "power_factor": 0.945
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 468.5,
+        "expected_kwh": 481.24,
+        "deviation_pct": -2.6,
+        "invalid": 0,
+        "voltage_v": 221.3,
+        "current_a": 92.19,
+        "power_factor": 0.943
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 480.07,
+        "expected_kwh": 481.24,
+        "deviation_pct": -0.2,
+        "invalid": 0,
+        "voltage_v": 220.9,
+        "current_a": 91.41,
+        "power_factor": 0.951
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 474.5,
+        "expected_kwh": 481.24,
+        "deviation_pct": -1.4,
+        "invalid": 0,
+        "voltage_v": 220.7,
+        "current_a": 92.49,
+        "power_factor": 0.951
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 480.01,
+        "expected_kwh": 481.24,
+        "deviation_pct": -0.3,
+        "invalid": 0,
+        "voltage_v": 220.6,
+        "current_a": 91.19,
+        "power_factor": 0.945
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 474.66,
+        "expected_kwh": 481.24,
+        "deviation_pct": -1.4,
+        "invalid": 0,
+        "voltage_v": 221.3,
+        "current_a": 90.96,
+        "power_factor": 0.948
+      }
+    ]
+  },
+  {
+    "meter_id": "M-102",
+    "name": "Iluminación bodega",
+    "status": "OK",
+    "anomaly": null,
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 1006.9,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 0.6,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 188.46,
+        "power_factor": 0.936
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 1013.02,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 1.2,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 187.31,
+        "power_factor": 0.93
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 1014.87,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 1.4,
+        "invalid": 0,
+        "voltage_v": 219.4,
+        "current_a": 188.59,
+        "power_factor": 0.927
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 1005.61,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 0.5,
+        "invalid": 0,
+        "voltage_v": 219.5,
+        "current_a": 188.59,
+        "power_factor": 0.928
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 996.32,
+        "expected_kwh": 1000.54,
+        "deviation_pct": -0.4,
+        "invalid": 0,
+        "voltage_v": 219.5,
+        "current_a": 189.83,
+        "power_factor": 0.927
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 987.41,
+        "expected_kwh": 1000.54,
+        "deviation_pct": -1.3,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 188.74,
+        "power_factor": 0.922
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 991.89,
+        "expected_kwh": 1000.54,
+        "deviation_pct": -0.9,
+        "invalid": 0,
+        "voltage_v": 219.6,
+        "current_a": 188.94,
+        "power_factor": 0.93
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 1001.54,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 0.1,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 188.46,
+        "power_factor": 0.928
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 1009.22,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 0.9,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 188.68,
+        "power_factor": 0.929
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 1017.53,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 1.7,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 188.66,
+        "power_factor": 0.926
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 1026.36,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 2.6,
+        "invalid": 0,
+        "voltage_v": 219.8,
+        "current_a": 189.55,
+        "power_factor": 0.929
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 996.16,
+        "expected_kwh": 1000.54,
+        "deviation_pct": -0.4,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 188.67,
+        "power_factor": 0.929
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 1008.9,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 0.8,
+        "invalid": 0,
+        "voltage_v": 220.4,
+        "current_a": 189,
+        "power_factor": 0.939
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 1012.85,
+        "expected_kwh": 1000.54,
+        "deviation_pct": 1.2,
+        "invalid": 0,
+        "voltage_v": 219.6,
+        "current_a": 188.72,
+        "power_factor": 0.93
+      }
+    ]
+  },
+  {
+    "meter_id": "M-111",
+    "name": "Taller de mantenimiento",
+    "status": "OK",
+    "anomaly": null,
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 946.82,
+        "expected_kwh": 940.07,
+        "deviation_pct": 0.7,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 177.04,
+        "power_factor": 0.94
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 928,
+        "expected_kwh": 940.07,
+        "deviation_pct": -1.3,
+        "invalid": 0,
+        "voltage_v": 219.7,
+        "current_a": 176.83,
+        "power_factor": 0.945
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 934.03,
+        "expected_kwh": 940.07,
+        "deviation_pct": -0.6,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 176.66,
+        "power_factor": 0.938
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 943.42,
+        "expected_kwh": 940.07,
+        "deviation_pct": 0.4,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 177.64,
+        "power_factor": 0.942
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 947.35,
+        "expected_kwh": 940.07,
+        "deviation_pct": 0.8,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 177.21,
+        "power_factor": 0.936
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 940.32,
+        "expected_kwh": 940.07,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 176.42,
+        "power_factor": 0.941
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 923.35,
+        "expected_kwh": 940.07,
+        "deviation_pct": -1.8,
+        "invalid": 0,
+        "voltage_v": 220.4,
+        "current_a": 176.03,
+        "power_factor": 0.934
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 925.36,
+        "expected_kwh": 940.07,
+        "deviation_pct": -1.6,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 176.24,
+        "power_factor": 0.939
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 930.37,
+        "expected_kwh": 940.07,
+        "deviation_pct": -1,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 176.58,
+        "power_factor": 0.937
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 936.43,
+        "expected_kwh": 940.07,
+        "deviation_pct": -0.4,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 176,
+        "power_factor": 0.945
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 947.03,
+        "expected_kwh": 940.07,
+        "deviation_pct": 0.7,
+        "invalid": 0,
+        "voltage_v": 219.8,
+        "current_a": 175.89,
+        "power_factor": 0.948
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 941.89,
+        "expected_kwh": 940.07,
+        "deviation_pct": 0.2,
+        "invalid": 0,
+        "voltage_v": 220.4,
+        "current_a": 176.54,
+        "power_factor": 0.942
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 942.1,
+        "expected_kwh": 940.07,
+        "deviation_pct": 0.2,
+        "invalid": 0,
+        "voltage_v": 219.8,
+        "current_a": 176.4,
+        "power_factor": 0.942
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 946.72,
+        "expected_kwh": 940.07,
+        "deviation_pct": 0.7,
+        "invalid": 0,
+        "voltage_v": 220.6,
+        "current_a": 175.83,
+        "power_factor": 0.937
+      }
+    ]
+  },
+  {
+    "meter_id": "M-101",
+    "name": "Compresor principal",
+    "status": "OK",
+    "anomaly": null,
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 725.59,
+        "expected_kwh": 731.15,
+        "deviation_pct": -0.8,
+        "invalid": 0,
+        "voltage_v": 221.2,
+        "current_a": 137.96,
+        "power_factor": 0.94
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 729.61,
+        "expected_kwh": 731.15,
+        "deviation_pct": -0.2,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 137.87,
+        "power_factor": 0.94
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 732.95,
+        "expected_kwh": 731.15,
+        "deviation_pct": 0.2,
+        "invalid": 0,
+        "voltage_v": 220.9,
+        "current_a": 138.2,
+        "power_factor": 0.939
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 737.66,
+        "expected_kwh": 731.15,
+        "deviation_pct": 0.9,
+        "invalid": 0,
+        "voltage_v": 221.2,
+        "current_a": 138.09,
+        "power_factor": 0.942
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 731.51,
+        "expected_kwh": 731.15,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 220.9,
+        "current_a": 137.33,
+        "power_factor": 0.942
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 725.32,
+        "expected_kwh": 731.15,
+        "deviation_pct": -0.8,
+        "invalid": 0,
+        "voltage_v": 220.8,
+        "current_a": 138.85,
+        "power_factor": 0.937
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 723,
+        "expected_kwh": 731.15,
+        "deviation_pct": -1.1,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 137.36,
+        "power_factor": 0.939
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 730.84,
+        "expected_kwh": 731.15,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 221,
+        "current_a": 138.33,
+        "power_factor": 0.938
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 728.04,
+        "expected_kwh": 731.15,
+        "deviation_pct": -0.4,
+        "invalid": 0,
+        "voltage_v": 221.2,
+        "current_a": 138.87,
+        "power_factor": 0.938
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 727.62,
+        "expected_kwh": 731.15,
+        "deviation_pct": -0.5,
+        "invalid": 0,
+        "voltage_v": 220.9,
+        "current_a": 138.35,
+        "power_factor": 0.938
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 737.17,
+        "expected_kwh": 731.15,
+        "deviation_pct": 0.8,
+        "invalid": 0,
+        "voltage_v": 220.5,
+        "current_a": 138.36,
+        "power_factor": 0.944
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 745.27,
+        "expected_kwh": 731.15,
+        "deviation_pct": 1.9,
+        "invalid": 0,
+        "voltage_v": 220.8,
+        "current_a": 138.58,
+        "power_factor": 0.942
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 722.7,
+        "expected_kwh": 731.15,
+        "deviation_pct": -1.2,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 137.72,
+        "power_factor": 0.937
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 728.79,
+        "expected_kwh": 731.15,
+        "deviation_pct": -0.3,
+        "invalid": 0,
+        "voltage_v": 220.9,
+        "current_a": 137.7,
+        "power_factor": 0.943
+      }
+    ]
+  },
+  {
+    "meter_id": "M-108",
+    "name": "Tablero general",
+    "status": "OK",
+    "anomaly": null,
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 1196.4,
+        "expected_kwh": 1207.83,
+        "deviation_pct": -0.9,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 228.42,
+        "power_factor": 0.93
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 1216.03,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.7,
+        "invalid": 0,
+        "voltage_v": 220.2,
+        "current_a": 228.6,
+        "power_factor": 0.922
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 1218.74,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.9,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 230.43,
+        "power_factor": 0.936
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 1213.32,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.5,
+        "invalid": 0,
+        "voltage_v": 219.7,
+        "current_a": 229,
+        "power_factor": 0.934
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 1202.45,
+        "expected_kwh": 1207.83,
+        "deviation_pct": -0.4,
+        "invalid": 0,
+        "voltage_v": 219.6,
+        "current_a": 227.46,
+        "power_factor": 0.929
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 1209.14,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.1,
+        "invalid": 0,
+        "voltage_v": 219.7,
+        "current_a": 229.27,
+        "power_factor": 0.933
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 1213.73,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.5,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 229.98,
+        "power_factor": 0.925
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 1209.44,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.1,
+        "invalid": 0,
+        "voltage_v": 220.3,
+        "current_a": 227.56,
+        "power_factor": 0.929
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 1211.35,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.3,
+        "invalid": 0,
+        "voltage_v": 220.1,
+        "current_a": 229.1,
+        "power_factor": 0.926
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 1207.31,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 219.9,
+        "current_a": 228.85,
+        "power_factor": 0.929
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 1213.08,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.4,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 228.62,
+        "power_factor": 0.929
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 1223.95,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 1.3,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 228.73,
+        "power_factor": 0.928
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 1207.7,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 220,
+        "current_a": 230.08,
+        "power_factor": 0.933
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 1211.49,
+        "expected_kwh": 1207.83,
+        "deviation_pct": 0.3,
+        "invalid": 0,
+        "voltage_v": 219.8,
+        "current_a": 229.65,
+        "power_factor": 0.923
+      }
+    ]
+  },
+  {
+    "meter_id": "M-110",
+    "name": "Data center",
+    "status": "OK",
+    "anomaly": null,
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-09-01",
+        "kwh": 702.5,
+        "expected_kwh": 707.2,
+        "deviation_pct": -0.7,
+        "invalid": 0,
+        "voltage_v": 221,
+        "current_a": 133.09,
+        "power_factor": 0.946
+      },
+      {
+        "day": 2,
+        "date": "2026-09-02",
+        "kwh": 699.28,
+        "expected_kwh": 707.2,
+        "deviation_pct": -1.1,
+        "invalid": 0,
+        "voltage_v": 221,
+        "current_a": 133.76,
+        "power_factor": 0.947
+      },
+      {
+        "day": 3,
+        "date": "2026-09-03",
+        "kwh": 707,
+        "expected_kwh": 707.2,
+        "deviation_pct": 0,
+        "invalid": 0,
+        "voltage_v": 220.7,
+        "current_a": 134.42,
+        "power_factor": 0.953
+      },
+      {
+        "day": 4,
+        "date": "2026-09-04",
+        "kwh": 702.13,
+        "expected_kwh": 707.2,
+        "deviation_pct": -0.7,
+        "invalid": 0,
+        "voltage_v": 220.7,
+        "current_a": 133.53,
+        "power_factor": 0.949
+      },
+      {
+        "day": 5,
+        "date": "2026-09-05",
+        "kwh": 706.84,
+        "expected_kwh": 707.2,
+        "deviation_pct": -0.1,
+        "invalid": 0,
+        "voltage_v": 221.2,
+        "current_a": 133.62,
+        "power_factor": 0.949
+      },
+      {
+        "day": 6,
+        "date": "2026-09-06",
+        "kwh": 718.04,
+        "expected_kwh": 707.2,
+        "deviation_pct": 1.5,
+        "invalid": 0,
+        "voltage_v": 221.2,
+        "current_a": 133.69,
+        "power_factor": 0.954
+      },
+      {
+        "day": 7,
+        "date": "2026-09-07",
+        "kwh": 712.26,
+        "expected_kwh": 707.2,
+        "deviation_pct": 0.7,
+        "invalid": 0,
+        "voltage_v": 221.3,
+        "current_a": 132.7,
+        "power_factor": 0.947
+      },
+      {
+        "day": 8,
+        "date": "2026-09-08",
+        "kwh": 711.62,
+        "expected_kwh": 707.2,
+        "deviation_pct": 0.6,
+        "invalid": 0,
+        "voltage_v": 220.8,
+        "current_a": 133.09,
+        "power_factor": 0.952
+      },
+      {
+        "day": 9,
+        "date": "2026-09-09",
+        "kwh": 714.41,
+        "expected_kwh": 707.2,
+        "deviation_pct": 1,
+        "invalid": 0,
+        "voltage_v": 220.7,
+        "current_a": 132.84,
+        "power_factor": 0.945
+      },
+      {
+        "day": 10,
+        "date": "2026-09-10",
+        "kwh": 706.74,
+        "expected_kwh": 707.2,
+        "deviation_pct": -0.1,
+        "invalid": 0,
+        "voltage_v": 220.9,
+        "current_a": 132.51,
+        "power_factor": 0.954
+      },
+      {
+        "day": 11,
+        "date": "2026-09-11",
+        "kwh": 700.23,
+        "expected_kwh": 707.2,
+        "deviation_pct": -1,
+        "invalid": 0,
+        "voltage_v": 221,
+        "current_a": 133.81,
+        "power_factor": 0.957
+      },
+      {
+        "day": 12,
+        "date": "2026-09-12",
+        "kwh": 700.32,
+        "expected_kwh": 707.2,
+        "deviation_pct": -1,
+        "invalid": 0,
+        "voltage_v": 221.2,
+        "current_a": 133.22,
+        "power_factor": 0.951
+      },
+      {
+        "day": 13,
+        "date": "2026-09-13",
+        "kwh": 705.87,
+        "expected_kwh": 707.2,
+        "deviation_pct": -0.2,
+        "invalid": 0,
+        "voltage_v": 221.4,
+        "current_a": 133.07,
+        "power_factor": 0.946
+      },
+      {
+        "day": 14,
+        "date": "2026-09-14",
+        "kwh": 706.16,
+        "expected_kwh": 707.2,
+        "deviation_pct": -0.1,
+        "invalid": 0,
+        "voltage_v": 221.1,
+        "current_a": 132.11,
+        "power_factor": 0.949
+      }
+    ]
+  }
+]

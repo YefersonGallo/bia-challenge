@@ -23,7 +23,7 @@ export function executiveSummary(r: Report): string[] {
   }
   for (const f of byType(r, 'DATA_QUALITY')) {
     out.push(
-      `${f.meter_id} no tiene un problema de consumo sino de medición: ${fmtNum(f.evidence.invalid_readings)} lecturas son físicamente inconsistentes` +
+      `${f.meter_id} no tiene un problema de consumo sino de medición: ${fmtNum(f.evidence.invalid_readings)} lecturas están marcadas como inconsistentes (voltaje, saltos o relación V·I·PF)` +
         `${f.evidence.onset_day ? ` desde el día ${f.evidence.onset_day}` : ''} mientras el consumo se mantiene estable. Hay que validar el medidor antes de usar sus datos.`,
     )
   }

@@ -268,9 +268,10 @@ function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: Return
                 {fmtNum(r.summary.readings)} lecturas, {fmtNum(r.summary.invalid_readings)} inválidas (PF fuera de [0,1] o 0 V con consumo).
               </span>
               <span>
-                Lectura inconsistente: voltaje fuera de ±{fmtNum(r.methodology.voltage_tol_pct)}% del habitual del medidor, salto de factor de potencia mayor a{' '}
-                {fmtNum(r.methodology.pf_jump, 2)} frente a sus vecinas, o relación kWh / V·I·PF que se aparta ±{fmtNum(r.methodology.coherence_tol_pct)}% de la propia y de
-                la local. Un cambio de régimen sostenido no cuenta como error de datos.
+                Lectura inconsistente: voltaje fuera de {fmtNum(r.methodology.voltage_min)}–{fmtNum(r.methodology.voltage_max)} V o con saltos de más de{' '}
+                {fmtNum(r.methodology.voltage_jump)} V entre horas, salto de factor de potencia mayor a {fmtNum(r.methodology.pf_jump, 2)} frente a sus vecinas, o relación
+                kWh / V·I·PF que se aparta ±{fmtNum(r.methodology.coherence_tol_pct)}% de la propia y de la local. Severidad alta si más del{' '}
+                {fmtNum(r.methodology.dq_high_share_pct)}% de las lecturas de 24 h quedan marcadas. Un cambio de régimen sostenido no cuenta como error de datos.
               </span>
             </div>
             <div className="flex flex-col gap-1">

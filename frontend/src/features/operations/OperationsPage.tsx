@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { useEvents, useMeters } from '@/shared/api/queries'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useEvents, useHeatmap, useMeters } from '@/shared/api/queries'
 import type { MeterSummary } from '@/shared/api/types'
+import { Heatmap } from '@/shared/charts/Heatmap'
 import { PlantChart } from '@/shared/charts/small'
 import { sumSeries } from '@/shared/charts/geometry'
 import { fmtDayHour } from '@/shared/lib/format'
@@ -37,6 +38,19 @@ function PlantOverview({ meters }: { meters: MeterSummary[] }) {
         ))}
         {flaggedWithout.length > 0 && <span className="font-mono text-[11px] text-muted">Sin eventos para {flaggedWithout.join(' ni ')}.</span>}
       </div>
+    </section>
+  )
+}
+
+/** Meters × days deviation map; clicking a row opens the investigation (or the meter). */
+function DeviationMap() {
+  const { data: rows = [] } = useHeatmap()
+  const navigate = useNavigate()
+  if (rows.length === 0) return null
+  return (
+    <section className="flex flex-col gap-1.5 rounded-md border border-line bg-panel px-4 py-3.5">
+      <Label>DESVIACIÓN DIARIA FRENTE AL BASELINE · MEDIDOR × DÍA</Label>
+      <Heatmap rows={rows} onSelect={(r) => navigate(r.anomaly ? `/anomalies/${r.anomaly.id}` : `/meters/${r.meter_id}`)} />
     </section>
   )
 }
@@ -91,7 +105,14 @@ export function OperationsPage() {
             )}
           </div>
         ))}
-        {focus ? <FocusPanel meterId={focus} onClose={() => setFocus(null)} /> : <PlantOverview meters={meters} />}
+        {focus ? (
+          <FocusPanel meterId={focus} onClose={() => setFocus(null)} />
+        ) : (
+          <>
+            <PlantOverview meters={meters} />
+            <DeviationMap />
+          </>
+        )}
       </div>
       <AlarmStack onFocus={setFocus} />
     </div>

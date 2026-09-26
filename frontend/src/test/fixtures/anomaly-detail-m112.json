@@ -1,0 +1,605 @@
+{
+  "id": "A-0926-1310-7596-M-112",
+  "analysis_id": "A-0926-1310-7596",
+  "meter_id": "M-112",
+  "detected_at": "2026-09-26T13:10:11.600960209Z",
+  "type": "DATA_QUALITY",
+  "severity": "HIGH",
+  "confidence": 0.97,
+  "priority_score": 2.91,
+  "rank": 2,
+  "reason": "El consumo es estable (+0,5%), pero hay 32 lecturas físicamente inconsistentes (saltos de voltaje y de factor de potencia que no cuadran con el consumo); el problema está en la medición, no en la carga.",
+  "recommended_action": "Validar medidor y telemetría.",
+  "next_steps": [
+    "Validar el medidor y los transformadores de corriente y de potencial",
+    "Marcar sus lecturas como no confiables para facturación y reportes",
+    "Revisar comunicación y firmware del medidor"
+  ],
+  "explained_by": "template",
+  "status": "OPEN",
+  "evidence": {
+    "meter_id": "M-112",
+    "meter_name": "Subestación B",
+    "baseline_kwh": 659.5,
+    "current_kwh": 662.7,
+    "variation_pct": 0.5,
+    "onset_day": 13,
+    "persistent_hours": 47,
+    "night_ratio": 1.03,
+    "invalid_readings": 32,
+    "physical_coherence": 0.961,
+    "signals": [
+      {
+        "code": "VOLTAGE_JUMPS",
+        "description": "16 lecturas con voltaje fuera de 209–231 V (202–241 V)",
+        "value": 16
+      },
+      {
+        "code": "VOLTAGE_STEPS",
+        "description": "27 saltos de voltaje de más de 15 V entre horas seguidas",
+        "value": 27
+      },
+      {
+        "code": "PF_JUMPS",
+        "description": "12 saltos bruscos del factor de potencia (0,58–0,98)",
+        "value": 12
+      },
+      {
+        "code": "INCOHERENT_READINGS",
+        "description": "13 lecturas donde el consumo no cuadra con V·I·PF (k habitual 1,04)",
+        "value": 13
+      },
+      {
+        "code": "STABLE_CONSUMPTION",
+        "description": "Consumo estable (+0,5%): no es un cambio de carga",
+        "value": 0.5
+      },
+      {
+        "code": "FLAG_SHARE",
+        "description": "Hasta 67% de las lecturas de 24 h marcadas como inconsistentes",
+        "value": 66.7
+      },
+      {
+        "code": "DQ_EVENT",
+        "description": "Registro operativo que lo corrobora: «Intermittent readings and abnormal electrical jumps» (13/09 00:00)",
+        "value": 1
+      }
+    ],
+    "variables": [
+      {
+        "name": "Consumo diario",
+        "unit": "kWh",
+        "baseline": 659.5,
+        "current": 659.76,
+        "delta_pct": 0
+      },
+      {
+        "name": "Corriente media",
+        "unit": "A",
+        "baseline": 125.72,
+        "current": 120.67,
+        "delta_pct": -4
+      },
+      {
+        "name": "Factor de potencia",
+        "unit": "",
+        "baseline": 0.951,
+        "current": 0.947,
+        "delta_pct": -0.4
+      },
+      {
+        "name": "Voltaje medio",
+        "unit": "V",
+        "baseline": 221,
+        "current": 223.1,
+        "delta_pct": 1
+      }
+    ],
+    "related_events": [
+      {
+        "id": "EV-004",
+        "meter_id": "M-112",
+        "timestamp": "2026-09-13T00:00:00Z",
+        "type": "DATA_QUALITY",
+        "description": "Intermittent readings and abnormal electrical jumps",
+        "category": "INFORMATIONAL",
+        "expected_effect": "NONE"
+      }
+    ],
+    "shift_pct": 0,
+    "onset": "2026-09-13T00:00:00Z",
+    "event_explains_shift": false
+  },
+  "evidence_summary": "16 lecturas con voltaje fuera de 209–231 V (202–241 V) · 27 saltos de voltaje de más de 15 V entre horas seguidas · 12 saltos bruscos del factor de potencia (0,58–0,98)",
+  "confidence_breakdown": [
+    {
+      "key": "magnitude",
+      "label": "Magnitud",
+      "weight": 0.35,
+      "score": 1,
+      "detail": "67% de lecturas marcadas en 24 h"
+    },
+    {
+      "key": "persistence",
+      "label": "Persistencia",
+      "weight": 0.25,
+      "score": 1,
+      "detail": "47 h"
+    },
+    {
+      "key": "variables",
+      "label": "Variables que coinciden",
+      "weight": 0.25,
+      "score": 1,
+      "detail": "voltaje, FP, relación V·I·PF y consumo estable"
+    },
+    {
+      "key": "events",
+      "label": "Coherencia con eventos",
+      "weight": 0.15,
+      "score": 1,
+      "detail": "un registro de calidad de datos lo corrobora"
+    }
+  ],
+  "projected_impact": {
+    "extra_kwh_per_day": 3.2,
+    "extra_kwh_per_month": 96,
+    "extra_kwh_so_far": 0,
+    "cost_per_month_cop": 81600,
+    "tariff_cop_per_kwh": 850,
+    "power_factor": 0.95,
+    "reactive_ratio": 0.34,
+    "reactive_excess": 0,
+    "reactive_kvarh_day": 225,
+    "normalized": 1
+  },
+  "change_point_at": "2026-09-13T00:00:00Z",
+  "meter": {
+    "id": "M-112",
+    "name": "Subestación B",
+    "location": "Subestación B",
+    "created_at": "2026-09-01T00:00:00Z"
+  },
+  "days": [
+    {
+      "day": 1,
+      "date": "2026-09-01",
+      "kwh": 658.58,
+      "expected_kwh": 659.53,
+      "deviation_pct": -0.1,
+      "invalid": 0,
+      "voltage_v": 221.1,
+      "current_a": 125.89,
+      "power_factor": 0.952
+    },
+    {
+      "day": 2,
+      "date": "2026-09-02",
+      "kwh": 656.95,
+      "expected_kwh": 659.53,
+      "deviation_pct": -0.4,
+      "invalid": 0,
+      "voltage_v": 221,
+      "current_a": 125.36,
+      "power_factor": 0.947
+    },
+    {
+      "day": 3,
+      "date": "2026-09-03",
+      "kwh": 667.6,
+      "expected_kwh": 659.53,
+      "deviation_pct": 1.2,
+      "invalid": 0,
+      "voltage_v": 221.1,
+      "current_a": 126.21,
+      "power_factor": 0.95
+    },
+    {
+      "day": 4,
+      "date": "2026-09-04",
+      "kwh": 667.32,
+      "expected_kwh": 659.53,
+      "deviation_pct": 1.2,
+      "invalid": 0,
+      "voltage_v": 221.2,
+      "current_a": 125.15,
+      "power_factor": 0.952
+    },
+    {
+      "day": 5,
+      "date": "2026-09-05",
+      "kwh": 662.84,
+      "expected_kwh": 659.53,
+      "deviation_pct": 0.5,
+      "invalid": 0,
+      "voltage_v": 220.6,
+      "current_a": 126.28,
+      "power_factor": 0.954
+    },
+    {
+      "day": 6,
+      "date": "2026-09-06",
+      "kwh": 657.74,
+      "expected_kwh": 659.53,
+      "deviation_pct": -0.3,
+      "invalid": 0,
+      "voltage_v": 220.7,
+      "current_a": 125.99,
+      "power_factor": 0.948
+    },
+    {
+      "day": 7,
+      "date": "2026-09-07",
+      "kwh": 664.08,
+      "expected_kwh": 659.53,
+      "deviation_pct": 0.7,
+      "invalid": 0,
+      "voltage_v": 221.1,
+      "current_a": 125.17,
+      "power_factor": 0.958
+    },
+    {
+      "day": 8,
+      "date": "2026-09-08",
+      "kwh": 657.78,
+      "expected_kwh": 659.53,
+      "deviation_pct": -0.3,
+      "invalid": 0,
+      "voltage_v": 221.1,
+      "current_a": 125.46,
+      "power_factor": 0.949
+    },
+    {
+      "day": 9,
+      "date": "2026-09-09",
+      "kwh": 653,
+      "expected_kwh": 659.53,
+      "deviation_pct": -1,
+      "invalid": 0,
+      "voltage_v": 221.1,
+      "current_a": 126.29,
+      "power_factor": 0.951
+    },
+    {
+      "day": 10,
+      "date": "2026-09-10",
+      "kwh": 662.43,
+      "expected_kwh": 659.53,
+      "deviation_pct": 0.4,
+      "invalid": 0,
+      "voltage_v": 220.8,
+      "current_a": 126.02,
+      "power_factor": 0.954
+    },
+    {
+      "day": 11,
+      "date": "2026-09-11",
+      "kwh": 654.55,
+      "expected_kwh": 659.53,
+      "deviation_pct": -0.8,
+      "invalid": 0,
+      "voltage_v": 221.2,
+      "current_a": 125.96,
+      "power_factor": 0.947
+    },
+    {
+      "day": 12,
+      "date": "2026-09-12",
+      "kwh": 668.34,
+      "expected_kwh": 659.53,
+      "deviation_pct": 1.3,
+      "invalid": 1,
+      "voltage_v": 221.3,
+      "current_a": 127.77,
+      "power_factor": 0.945
+    },
+    {
+      "day": 13,
+      "date": "2026-09-13",
+      "kwh": 662.42,
+      "expected_kwh": 659.53,
+      "deviation_pct": 0.4,
+      "invalid": 16,
+      "voltage_v": 220.9,
+      "current_a": 123.66,
+      "power_factor": 0.946
+    },
+    {
+      "day": 14,
+      "date": "2026-09-14",
+      "kwh": 662.65,
+      "expected_kwh": 659.53,
+      "deviation_pct": 0.5,
+      "invalid": 15,
+      "voltage_v": 223.1,
+      "current_a": 120.67,
+      "power_factor": 0.947
+    }
+  ],
+  "hourly_baseline": [
+    21.76,
+    21.86,
+    20.37,
+    20.28,
+    20.37,
+    20.67,
+    26.7,
+    26.69,
+    31.42,
+    32.25,
+    32.92,
+    32.47,
+    32.29,
+    31.42,
+    32.19,
+    33.39,
+    32.01,
+    32.78,
+    26.37,
+    27.04,
+    25.95,
+    25.9,
+    26.3,
+    26.13
+  ],
+  "hourly_current": [
+    20.3,
+    22.59,
+    22.49,
+    20.88,
+    21.81,
+    22.96,
+    27.09,
+    26.03,
+    29.34,
+    30.72,
+    31.43,
+    32.13,
+    30.04,
+    33.64,
+    34.16,
+    33.15,
+    32.78,
+    32.94,
+    26.52,
+    26.22,
+    24.61,
+    28.01,
+    26.62,
+    26.19
+  ],
+  "anomaly": true,
+  "actions": [],
+  "k_factor": 1.0421,
+  "k_mad": 0.0349,
+  "flagged_readings": [
+    {
+      "timestamp": "2026-09-12T01:00:00Z",
+      "flags": [
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T00:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T01:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T03:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PF_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T04:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T06:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PF_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T07:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T09:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_PF_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T10:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T12:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PF_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T13:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T15:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_PF_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T16:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T18:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T19:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T21:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-13T22:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T00:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_PF_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T03:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_PF_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T04:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T06:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PF_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T07:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T09:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PF_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T10:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T12:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T13:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T15:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PF_JUMP",
+        "DQ_PHYSICS"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T16:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T18:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PF_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T19:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T21:00:00Z",
+      "flags": [
+        "DQ_VOLTAGE",
+        "DQ_JUMP",
+        "DQ_PF_JUMP"
+      ]
+    },
+    {
+      "timestamp": "2026-09-14T22:00:00Z",
+      "flags": [
+        "DQ_JUMP"
+      ]
+    }
+  ]
+}

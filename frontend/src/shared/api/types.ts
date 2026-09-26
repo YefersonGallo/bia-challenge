@@ -96,6 +96,36 @@ export interface MeterStats {
   episode?: Episode
   base_electrical: Electrical
   current_electrical: Electrical
+  voltage_jumps: number
+  flagged_readings: FlaggedReading[] | null
+  /** Highest share of flagged readings in any 24 h window (0–1). */
+  max_flag_share_24h: number
+  /** kWh / (V·I·PF/1000) of the reference days, and its robust spread. */
+  k_factor: number
+  k_mad: number
+  hourly_p10: number[]
+  hourly_p90: number[]
+  /** Observed level since the change point divided by the baseline. */
+  level_factor: number
+  extra_kwh_so_far: number
+  episode_z: number
+  variable_z: Record<'kwh' | 'current' | 'voltage' | 'power_factor', number>
+}
+
+export type DQFlag = 'DQ_RANGE' | 'DQ_VOLTAGE' | 'DQ_JUMP' | 'DQ_PF_JUMP' | 'DQ_PHYSICS'
+
+export interface FlaggedReading {
+  timestamp: string
+  flags: DQFlag[]
+}
+
+export interface Reading {
+  meter_id: string
+  timestamp: string
+  consumption_kwh: number
+  voltage_v: number
+  current_a: number
+  power_factor: number
 }
 
 export interface EventItem {
@@ -104,6 +134,9 @@ export interface EventItem {
   timestamp: string
   type: string
   description: string
+  category: 'EXPLANATORY' | 'NON_EXPLANATORY' | 'INFORMATIONAL'
+  expected_effect: 'UP' | 'DOWN' | 'NONE'
+  duration_hours?: number
 }
 
 export interface Signal {
@@ -157,6 +190,45 @@ export interface Anomaly {
   explained_by: 'claude' | 'template'
   status: AnomalyStatus
   evidence: Evidence
+  evidence_summary?: string
+  confidence_breakdown?: ConfidenceComponent[] | null
+  projected_impact?: Impact | null
+  change_point_at?: string
+  ended_at?: string
+}
+
+export interface ConfidenceComponent {
+  key: 'magnitude' | 'persistence' | 'variables' | 'events'
+  label: string
+  weight: number
+  score: number
+  detail: string
+}
+
+export interface Impact {
+  extra_kwh_per_day: number
+  extra_kwh_per_month: number
+  extra_kwh_so_far: number
+  cost_per_month_cop: number
+  tariff_cop_per_kwh: number
+  power_factor: number
+  reactive_ratio: number
+  reactive_excess: number
+  reactive_kvarh_day: number
+  normalized: number
+}
+
+export type ActionKind = 'acknowledge' | 'investigate' | 'validate' | 'resolve' | 'dismiss' | 'note'
+
+export interface AnomalyAction {
+  id: string
+  anomaly_id: string
+  action: ActionKind
+  note?: string
+  /** Status after the action, when it changed it (notes leave it empty). */
+  status?: AnomalyStatus
+  actor: string
+  at: string
 }
 
 export interface AnomalyDetail extends Anomaly {
@@ -165,6 +237,10 @@ export interface AnomalyDetail extends Anomaly {
   hourly_baseline: number[]
   hourly_current: number[]
   anomaly: boolean
+  actions: AnomalyAction[] | null
+  k_factor: number
+  k_mad: number
+  flagged_readings: FlaggedReading[] | null
 }
 
 export interface MeterDetail extends MeterSummary {
@@ -178,6 +254,7 @@ export interface StepState {
   label: string
   status: RunStatus
   result?: string
+  duration_ms?: number
 }
 
 export interface AnalysisRun {
@@ -225,7 +302,12 @@ export interface Methodology {
   baseline_days: number
   shift_threshold_pct: number
   min_episode_hours: number
-  voltage_tol_pct: number
+  voltage_min: number
+  voltage_max: number
+  voltage_jump: number
+  duration_tol_hours: number
+  dq_high_share_pct: number
+  tariff_cop_per_kwh: number
   pf_jump: number
   critical_pct: number
   high_pct: number
@@ -242,4 +324,44 @@ export interface LoginResponse {
   token: string
   expires_at: string
   user: { email: string; name: string }
+}
+
+export interface HeatmapRow {
+  meter_id: string
+  name: string
+  status: MeterStatus
+  anomaly: AnomalyRef | null
+  days: DayPoint[]
+}
+
+export interface Baseline {
+  meter_id: string
+  window_days: number
+  median: number[]
+  p10: number[]
+  p90: number[]
+  daily_kwh: number
+  k_factor: number
+  k_mad: number
+  k_tolerance: number
+  voltage_band: [number, number]
+  flagged_readings: FlaggedReading[] | null
+}
+
+export interface ForecastPoint {
+  timestamp: string
+  expected_kwh: number
+  p10: number
+  p90: number
+  projected_kwh: number
+}
+
+export interface Forecast {
+  meter_id: string
+  method: string
+  level_factor: number
+  points: ForecastPoint[]
+  expected_kwh: number
+  projected_kwh: number
+  impact: Impact | null
 }

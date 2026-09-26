@@ -1,0 +1,189 @@
+{
+  "meter_id": "M-109",
+  "method": "perfil por hora del día (estacional ingenuo) × nivel observado desde el cambio (2,10)",
+  "level_factor": 2.099,
+  "points": [
+    {
+      "timestamp": "2026-09-15T00:00:00Z",
+      "expected_kwh": 31.32,
+      "p10": 30.13,
+      "p90": 33.34,
+      "projected_kwh": 65.74
+    },
+    {
+      "timestamp": "2026-09-15T01:00:00Z",
+      "expected_kwh": 32.49,
+      "p10": 31.24,
+      "p90": 34.42,
+      "projected_kwh": 68.2
+    },
+    {
+      "timestamp": "2026-09-15T02:00:00Z",
+      "expected_kwh": 33.32,
+      "p10": 31.912,
+      "p90": 35.054,
+      "projected_kwh": 69.94
+    },
+    {
+      "timestamp": "2026-09-15T03:00:00Z",
+      "expected_kwh": 33.2,
+      "p10": 31.264,
+      "p90": 33.706,
+      "projected_kwh": 69.69
+    },
+    {
+      "timestamp": "2026-09-15T04:00:00Z",
+      "expected_kwh": 33.34,
+      "p10": 30.816,
+      "p90": 35.2,
+      "projected_kwh": 69.98
+    },
+    {
+      "timestamp": "2026-09-15T05:00:00Z",
+      "expected_kwh": 34.03,
+      "p10": 31.202,
+      "p90": 35.724,
+      "projected_kwh": 71.43
+    },
+    {
+      "timestamp": "2026-09-15T06:00:00Z",
+      "expected_kwh": 41.2,
+      "p10": 40.136,
+      "p90": 42.01,
+      "projected_kwh": 86.48
+    },
+    {
+      "timestamp": "2026-09-15T07:00:00Z",
+      "expected_kwh": 41.46,
+      "p10": 40.046,
+      "p90": 44.802,
+      "projected_kwh": 87.02
+    },
+    {
+      "timestamp": "2026-09-15T08:00:00Z",
+      "expected_kwh": 51.29,
+      "p10": 50.62,
+      "p90": 53.38,
+      "projected_kwh": 107.66
+    },
+    {
+      "timestamp": "2026-09-15T09:00:00Z",
+      "expected_kwh": 51.07,
+      "p10": 48.462,
+      "p90": 53.804,
+      "projected_kwh": 107.2
+    },
+    {
+      "timestamp": "2026-09-15T10:00:00Z",
+      "expected_kwh": 50.67,
+      "p10": 50.15,
+      "p90": 51.908,
+      "projected_kwh": 106.36
+    },
+    {
+      "timestamp": "2026-09-15T11:00:00Z",
+      "expected_kwh": 51.76,
+      "p10": 50.238,
+      "p90": 52.96,
+      "projected_kwh": 108.64
+    },
+    {
+      "timestamp": "2026-09-15T12:00:00Z",
+      "expected_kwh": 51.05,
+      "p10": 49.844,
+      "p90": 52.382,
+      "projected_kwh": 107.15
+    },
+    {
+      "timestamp": "2026-09-15T13:00:00Z",
+      "expected_kwh": 51.17,
+      "p10": 50.15,
+      "p90": 52.57,
+      "projected_kwh": 107.41
+    },
+    {
+      "timestamp": "2026-09-15T14:00:00Z",
+      "expected_kwh": 51.66,
+      "p10": 49.408,
+      "p90": 53.212,
+      "projected_kwh": 108.43
+    },
+    {
+      "timestamp": "2026-09-15T15:00:00Z",
+      "expected_kwh": 51.44,
+      "p10": 50.536,
+      "p90": 53.114,
+      "projected_kwh": 107.97
+    },
+    {
+      "timestamp": "2026-09-15T16:00:00Z",
+      "expected_kwh": 50.8,
+      "p10": 50.042,
+      "p90": 53.308,
+      "projected_kwh": 106.63
+    },
+    {
+      "timestamp": "2026-09-15T17:00:00Z",
+      "expected_kwh": 51.93,
+      "p10": 50.804,
+      "p90": 52.868,
+      "projected_kwh": 109
+    },
+    {
+      "timestamp": "2026-09-15T18:00:00Z",
+      "expected_kwh": 42.37,
+      "p10": 40.422,
+      "p90": 43.59,
+      "projected_kwh": 88.93
+    },
+    {
+      "timestamp": "2026-09-15T19:00:00Z",
+      "expected_kwh": 44.21,
+      "p10": 42.042,
+      "p90": 45.616,
+      "projected_kwh": 92.8
+    },
+    {
+      "timestamp": "2026-09-15T20:00:00Z",
+      "expected_kwh": 42.38,
+      "p10": 40.774,
+      "p90": 44.592,
+      "projected_kwh": 88.96
+    },
+    {
+      "timestamp": "2026-09-15T21:00:00Z",
+      "expected_kwh": 41.46,
+      "p10": 39.802,
+      "p90": 43.334,
+      "projected_kwh": 87.02
+    },
+    {
+      "timestamp": "2026-09-15T22:00:00Z",
+      "expected_kwh": 41.77,
+      "p10": 39.148,
+      "p90": 44.59,
+      "projected_kwh": 87.68
+    },
+    {
+      "timestamp": "2026-09-15T23:00:00Z",
+      "expected_kwh": 42.35,
+      "p10": 40.264,
+      "p90": 43.17,
+      "projected_kwh": 88.89
+    }
+  ],
+  "expected_kwh": 1047.7,
+  "projected_kwh": 2199.2,
+  "impact": {
+    "extra_kwh_per_day": 1159.9,
+    "extra_kwh_per_month": 34797,
+    "extra_kwh_so_far": 2825,
+    "cost_per_month_cop": 29577450,
+    "tariff_cop_per_kwh": 850,
+    "power_factor": 0.74,
+    "reactive_ratio": 0.91,
+    "reactive_excess": 0.41,
+    "reactive_kvarh_day": 2007,
+    "normalized": 1
+  }
+}
