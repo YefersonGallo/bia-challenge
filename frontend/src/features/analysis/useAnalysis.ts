@@ -23,6 +23,8 @@ export function useAnalysis() {
   const start = useStartAnalysis()
   const invalidate = useInvalidateDerived()
   const prev = useRef<string | undefined>(undefined)
+  // Two clicks can land before React re-renders with isPending: guard synchronously.
+  const starting = useRef(false)
 
   const current = run.data ?? null
   useEffect(() => {
@@ -46,7 +48,14 @@ export function useAnalysis() {
     progress: runProgress(current),
     // A double click must not send two requests.
     start: () => {
-      if (!busy) start.mutate(undefined, { onSuccess: (r) => follow(r.id) })
+      if (busy || starting.current) return
+      starting.current = true
+      start.mutate(undefined, {
+        onSuccess: (r) => follow(r.id),
+        onSettled: () => {
+          starting.current = false
+        },
+      })
     },
     startError: start.error,
   }

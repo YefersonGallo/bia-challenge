@@ -178,7 +178,7 @@ var kindWords = []struct {
 	// Shutdowns first: "parada de la línea" mentions a line too.
 	{EventDataQuality, []string{"QUALITY", "CALIDAD", "TELEMETRY", "TELEMETRIA", "INTERMITTENT", "INTERMITENTE", "COMMUNICATION", "COMUNICACION", "FAULT"}},
 	{EventShutdown, []string{"SHUTDOWN", "OUTAGE", "PARADA", "APAGADO", "MANTENIMIENTO", "MAINTENANCE", "STOP", "STOPPED", "CORTE"}},
-	{EventLoadDecrease, []string{"DECREASE", "REDUCTION", "REDUCCION", "REDUCED", "REMOVED", "RETIRO", "RETIRADA", "DISMINUCION"}},
+	{EventLoadDecrease, []string{"DECREASE", "DECLINE", "DECLINED", "DROP", "DROPPED", "LOWER", "LOWERED", "REDUCE", "REDUCTION", "REDUCCION", "REDUCED", "REMOVED", "RETIRO", "RETIRADA", "DISMINUCION", "CAIDA", "DESCENSO", "BAJA"}},
 	{EventLoadIncrease, []string{"START", "STARTUP", "STARTED", "ARRANQUE", "NEW", "NUEVA", "NUEVO", "INCREASE", "AUMENTO", "EXPANSION", "ADDED", "ACTIVATED", "ACTIVADA", "ACTIVADO", "INSTALLED", "INSTALADA", "INSTALADO", "LINE", "LINEA"}},
 }
 

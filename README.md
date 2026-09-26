@@ -155,7 +155,7 @@ La técnica es híbrida: la estadística robusta y las reglas de dominio **decid
    - `DQ_PF_JUMP`: el FP se aparta más de 0,15 de la mediana de sus vecinas (ventana de 7 h);
    - `DQ_PHYSICS`: la relación `k = kWh / (V·I·PF/1000)` se aparta más de ±25 % de la propia del medidor **y** de la de sus vecinas.
 
-   Además cuentan como problema de datos las horas faltantes y las lecturas distintas para una misma hora (una copia idéntica, como un archivo cargado dos veces, se descarta sin más). Si faltan horas en las últimas 24 h, el consumo se escala a 24 h en vez de parecer una caída.
+   Las horas faltantes y las lecturas distintas para una misma hora se cuentan y se muestran (una copia idéntica, como un archivo cargado dos veces, se descarta sin más), pero no deciden un veredicto: unos huecos en la semana de referencia no deben tapar un cambio real. Si faltan horas en las últimas 24 h, el consumo se escala a 24 h en vez de parecer una caída.
 
    La última condición es la clave: un cambio de régimen sostenido, como el de M-109, no se confunde con un error de datos. El inicio del problema es la primera hora con al menos 3 lecturas marcadas en 24 h, y la severidad es alta si más del 10 % de las lecturas de alguna ventana de 24 h quedan marcadas. La columna `status` del CSV se ignora.
 2. **Baseline.** Mediana por hora del día de los días 1–7, más la MAD, sobre lecturas plausibles. Su suma es el **consumo esperado de un día**.

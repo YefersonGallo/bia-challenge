@@ -418,25 +418,29 @@ func TestDuplicatedFileDoesNotChangeTheResult(t *testing.T) {
 	}
 }
 
-// A gap in the data is a data-quality issue, not a drop in consumption.
-func TestMissingHoursAreDataQualityNotADrop(t *testing.T) {
+// A gap in the data is not a drop in consumption, and gaps never decide a
+// verdict on their own (they must not hide a real change either).
+func TestMissingHoursAreNotADrop(t *testing.T) {
 	f := fixtures(t)[len(fixtures(t))-1]
 	in := f.input
 	last := f.input.Readings[len(f.input.Readings)-1].Timestamp
+	first := f.input.Readings[0].Timestamp
 	in.Readings = nil
 	for _, r := range f.input.Readings {
 		if r.MeterID == "M-101" && last.Sub(r.Timestamp) < 10*time.Hour && last.Sub(r.Timestamp) >= 2*time.Hour {
 			continue // 8 hours missing on the last day
 		}
+		if r.MeterID == "M-109" && r.Timestamp.Sub(first) >= 30*time.Hour && r.Timestamp.Sub(first) < 36*time.Hour {
+			continue // 6 hours missing in the baseline week of the real anomaly
+		}
 		in.Readings = append(in.Readings, r)
 	}
 	res := analysis.New(analysis.DefaultConfig()).Analyze(in, nil)
 	s := res.Stats["M-101"]
-	if s.MissingHours != 8 || math.Abs(s.VariationPct) > 10 {
-		t.Fatalf("M-101: missing %d, variation %.1f%%", s.MissingHours, s.VariationPct)
+	if s.MissingHours != 8 || math.Abs(s.VariationPct) > 10 || findingFor(res, "M-101") != nil {
+		t.Fatalf("M-101: missing %d, variation %.1f%%, finding %v", s.MissingHours, s.VariationPct, findingFor(res, "M-101"))
 	}
-	fd := findingFor(res, "M-101")
-	if fd == nil || fd.Anomaly.Type != domain.DataQuality || !signalCodes(fd)["MISSING_HOURS"] {
-		t.Fatalf("M-101 finding = %+v", fd)
+	if res.Findings[0].Anomaly.MeterID != "M-109" || res.Findings[0].Anomaly.Type != domain.RealAnomaly {
+		t.Fatalf("gaps in the baseline week changed the P1: %s %s", res.Findings[0].Anomaly.MeterID, res.Findings[0].Anomaly.Type)
 	}
 }

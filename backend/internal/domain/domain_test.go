@@ -97,10 +97,11 @@ func TestEventKindReadsWordsNotSubstrings(t *testing.T) {
 		want      EventKind
 	}{
 		{"OPERATIONAL_CHANGE", "New production line activated", EventLoadIncrease},
-		{"OPERATIONAL_CHANGE", "Meter went offline", EventOther},              // "LINE" inside "OFFLINE"
-		{"OPERATIONAL_CHANGE", "Demand decline after the season", EventOther}, // "LINE" inside "DECLINE"
-		{"NOTE", "No new equipment was installed on this line", EventOther},   // unknown type: text never decides
-		{"OPERATIONAL_CHANGE", "No new equipment was installed", EventOther},  // negated description
+		{"OPERATIONAL_CHANGE", "Meter went offline", EventOther},                     // "LINE" inside "OFFLINE"
+		{"OPERATIONAL_CHANGE", "Demand decline after the season", EventLoadDecrease}, // "DECLINE", not "LINE"
+		{"OPERATIONAL_CHANGE", "Production decline on line 2", EventLoadDecrease},    // a decrease wins over "line"
+		{"NOTE", "No new equipment was installed on this line", EventOther},          // unknown type: text never decides
+		{"OPERATIONAL_CHANGE", "No new equipment was installed", EventOther},         // negated description
 		{"CAMBIO_OPERATIVO", "Arranque de la nueva línea", EventLoadIncrease},
 		{"LINE_STOP", "", EventShutdown},
 		{"UNKNOWN", "New production line activated", EventOther},

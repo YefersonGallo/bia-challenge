@@ -58,3 +58,23 @@ describe('useAnalysis', () => {
     await waitFor(() => expect(client.getQueryState(['run', 'latest'])?.isInvalidated).toBe(true))
   })
 })
+
+describe('useAnalysis double click', () => {
+  it('sends a single POST when start is called twice in the same tick', async () => {
+    const { renderHook, act: hookAct } = await import('@testing-library/react')
+    const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query')
+    const { mockApi } = await import('@/test/utils')
+    const { useAnalysis } = await import('./useAnalysis')
+    const { calls } = mockApi({ 'POST /ai/analyze': { id: 'A-1', status: 'RUNNING', steps: [], current_step: 0, started_at: '' } })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { result } = renderHook(() => useAnalysis(), {
+      wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+    })
+    hookAct(() => {
+      result.current.start()
+      result.current.start()
+    })
+    await new Promise((r) => setTimeout(r, 50))
+    expect(calls.filter((c) => c.method === 'POST')).toHaveLength(1)
+  })
+})
