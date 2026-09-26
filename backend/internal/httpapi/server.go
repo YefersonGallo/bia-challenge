@@ -73,10 +73,20 @@ func New(svc *app.Service, cfg Config) http.Handler {
 		mux.HandleFunc("GET /api/stream/state", s.streamState)
 		mux.HandleFunc("POST /api/stream/control", s.streamControl)
 	}
+	var root http.Handler = mux
 	if cfg.StaticDir != "" {
-		mux.Handle("GET /", spa(cfg.StaticDir))
+		// The SPA lives in its own router: a catch-all "GET /" next to the API
+		// routes would answer GET /api/ai/analyze with index.html instead of 405.
+		app := spa(cfg.StaticDir)
+		root = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api" || strings.HasPrefix(r.URL.Path, "/api/") {
+				mux.ServeHTTP(w, r)
+				return
+			}
+			app.ServeHTTP(w, r)
+		})
 	}
-	return chain(mux, s.recoverer, s.logRequests, securityHeaders, limitBody, jsonErrors, s.cors, s.authenticate)
+	return chain(root, s.recoverer, s.logRequests, securityHeaders, limitBody, jsonErrors, s.cors, s.authenticate)
 }
 
 func chain(h http.Handler, mws ...func(http.Handler) http.Handler) http.Handler {
@@ -114,7 +124,7 @@ func limitBody(next http.Handler) http.Handler {
 // jsonErrors turns the router's plain-text 404/405 into the API error format.
 func jsonErrors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/api/") {
+		if r.URL.Path != "/api" && !strings.HasPrefix(r.URL.Path, "/api/") {
 			next.ServeHTTP(w, r)
 			return
 		}

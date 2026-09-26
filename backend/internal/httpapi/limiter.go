@@ -49,14 +49,18 @@ func (l *limiter) fail(key string) {
 	l.fails[key] = append(l.recent(key), l.now())
 }
 
-// clientIP is the address nginx forwards (X-Real-IP) or the peer address.
+// clientIP is the peer address, or the X-Real-IP header when the peer is a proxy
+// on a private network (nginx in Docker): a client talking to the API directly
+// cannot pick its own identity to dodge the login limit.
 func clientIP(r *http.Request) string {
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return ip
-	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	if ip := net.ParseIP(host); ip != nil && (ip.IsLoopback() || ip.IsPrivate()) {
+		if fwd := r.Header.Get("X-Real-IP"); fwd != "" {
+			return fwd
+		}
 	}
 	return host
 }

@@ -102,7 +102,11 @@ func (Template) Explain(_ context.Context, a domain.Anomaly) (Explanation, error
 		if down {
 			change = "Caída"
 		}
-		e.Reason = fmt.Sprintf("%s de %s que coincide con %s; la relación eléctrica se mantiene sana.", change, abs(size), eventRef(ev))
+		electrical := "la relación eléctrica se mantiene sana"
+		if s, ok := signal(ev, "PF_DROP"); ok {
+			electrical = lower(s.Description) + ", a revisar aunque el cambio de carga esté explicado"
+		}
+		e.Reason = fmt.Sprintf("%s de %s que coincide con %s; %s.", change, abs(size), eventRef(ev), electrical)
 		e.NextSteps = []string{
 			"Confirmar con Producción que el cambio de carga es el esperado",
 			"Ajustar el baseline, la potencia contratada y la compensación de reactiva si aplica",

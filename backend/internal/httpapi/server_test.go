@@ -333,3 +333,21 @@ func TestLoginIsRateLimited(t *testing.T) {
 	hs.do("POST", "/api/auth/login", bad, http.StatusUnauthorized, nil)
 	hs.do("POST", "/api/auth/login", map[string]string{"email": "operador@vatio.demo", "password": "demo"}, http.StatusTooManyRequests, nil)
 }
+
+func TestSingleImageKeeps405AndJSONForTheAPI(t *testing.T) {
+	dir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(dir, "index.html"), []byte("<html>vatio</html>"), 0o644)
+	hs := setup(t)
+	auth := httpapi.Auth{Secret: []byte("test"), User: "u", Password: "p", TTL: time.Hour}
+	h := httpapi.New(hs.svc, httpapi.Config{Auth: auth, StaticDir: dir})
+	tok, _, _ := auth.Login("u", "p")
+	for path, want := range map[string]int{"/api/ai/analyze": http.StatusMethodNotAllowed, "/api": http.StatusNotFound, "/api/nope": http.StatusNotFound} {
+		req := httptest.NewRequest("GET", path, nil)
+		req.Header.Set("Authorization", "Bearer "+tok)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != want || !strings.Contains(rec.Header().Get("Content-Type"), "json") {
+			t.Errorf("GET %s = %d %s, want %d JSON", path, rec.Code, rec.Header().Get("Content-Type"), want)
+		}
+	}
+}

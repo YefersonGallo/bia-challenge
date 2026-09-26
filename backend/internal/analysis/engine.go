@@ -181,8 +181,11 @@ type Electrical struct {
 }
 
 // QualityIssue reports whether the meter's readings cannot be trusted.
+// Missing or repeated hours are reported but never decide a verdict on their
+// own: a few gaps in the baseline week must not hide a real change, and the last
+// 24 h are rescaled so a gap does not look like a drop.
 func (s MeterStats) QualityIssue(c Config) bool {
-	return s.InvalidReadings >= c.MinInvalid || s.Coherence < c.MinCoherence || s.MissingHours+s.DuplicateHours >= c.MinInvalid
+	return s.InvalidReadings >= c.MinInvalid || s.Coherence < c.MinCoherence
 }
 
 // Finding is a classified anomaly before explanation.
@@ -730,14 +733,14 @@ func (e *Engine) status(s MeterStats) (domain.MeterStatus, string) {
 	switch {
 	case s.VariationPct >= e.cfg.CriticalPct:
 		return domain.StatusCritical, fmt.Sprintf("variación %s sobre el baseline", fmtPct(s.VariationPct))
-	case s.QualityIssue(e.cfg) && s.InvalidReadings < e.cfg.MinInvalid:
-		return domain.StatusAlert, fmt.Sprintf("%d horas faltantes y %d repetidas", s.MissingHours, s.DuplicateHours)
 	case s.QualityIssue(e.cfg):
 		return domain.StatusAlert, fmt.Sprintf("%d lecturas físicamente inconsistentes", s.InvalidReadings)
 	case math.Abs(s.VariationPct) >= e.cfg.ShiftThreshold*100:
 		return domain.StatusAlert, fmt.Sprintf("variación %s frente al baseline", fmtPct(s.VariationPct))
 	case ep != nil:
-		return domain.StatusAlert, fmt.Sprintf("%s de %s durante %d h (día %d)", map[int]string{1: "aumento", -1: "caída"}[ep.Direction], fmtPct(ep.MeanDevPct), ep.Hours, ep.OnsetDay)
+		return domain.StatusAlert, fmt.Sprintf("%s de %s durante %d h (día %d)", map[int]string{1: "aumento", -1: "caída"}[ep.Direction], fmtPctPlain(math.Abs(ep.MeanDevPct)), ep.Hours, ep.OnsetDay)
+	case s.MissingHours+s.DuplicateHours > 0:
+		return domain.StatusOK, fmt.Sprintf("dentro del rango esperado (%d horas sin lectura, %d repetidas)", s.MissingHours, s.DuplicateHours)
 	default:
 		return domain.StatusOK, "dentro del rango esperado"
 	}

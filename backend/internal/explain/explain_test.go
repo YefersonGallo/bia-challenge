@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -72,7 +73,7 @@ func claudeServer(t *testing.T, reason string, status int) *httptest.Server {
 		}
 		var req request
 		_ = json.NewDecoder(r.Body).Decode(&req)
-		if req.ToolChoice["name"] != "report_explanation" || !strings.Contains(req.Messages[0].Content, "evidence") {
+		if req.ToolChoice["name"] != "report_explanation" || !strings.Contains(fmt.Sprint(req.Messages[0].Content), "evidence") {
 			t.Errorf("unexpected request: %+v", req.ToolChoice)
 		}
 		if status != http.StatusOK {
@@ -270,5 +271,33 @@ func TestTemplateWordsFollowTheDirection(t *testing.T) {
 	e, _ = Template{}.Explain(context.Background(), fp)
 	if !strings.HasPrefix(e.Reason, "La caída de 79,9% durante 12 h") {
 		t.Errorf("false positive: %q", e.Reason)
+	}
+}
+
+// An ungrounded answer gets one rewrite, told which number failed; a second
+// ungrounded answer falls back to the template.
+func TestClaudeRewritesOnceWhenANumberIsNotInTheEvidence(t *testing.T) {
+	a := findings(t)["M-109"]
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		var req request
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		reason := "Consumo +999% por una fuga."
+		if calls == 2 {
+			if len(req.Messages) != 3 || !strings.Contains(fmt.Sprint(req.Messages[2].Content), "999") {
+				t.Errorf("the retry must say which number failed: %+v", req.Messages)
+			}
+			reason = "Consumo " + analysis.FormatPct(a.Evidence.VariationPct) + " sobre el baseline."
+		}
+		input, _ := json.Marshal(map[string]any{"reason": reason, "evidence_summary": "", "next_steps": []string{"Inspeccionar"}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"content": []map[string]any{{"type": "tool_use", "id": "tu_1", "name": "report_explanation", "input": json.RawMessage(input)}}})
+	}))
+	defer srv.Close()
+	c := NewClaude("test-key", "test-model")
+	c.BaseURL = srv.URL
+	e, err := WithFallback{Primary: c, Fallback: Template{}}.Explain(context.Background(), a)
+	if err != nil || e.Source != "claude" || calls != 2 {
+		t.Fatalf("source %s, calls %d, err %v", e.Source, calls, err)
 	}
 }
