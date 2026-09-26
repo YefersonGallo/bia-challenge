@@ -1,6 +1,7 @@
 package analysis_test
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -372,5 +373,70 @@ func TestOngoingOutageMatchesItsEvent(t *testing.T) {
 	f := findingFor(analysis.New(analysis.DefaultConfig()).Analyze(in, nil), "M-106")
 	if f.Anomaly.Type != domain.ExplainableAnomaly || !f.Anomaly.Evidence.EventExplainsShift {
 		t.Fatalf("ongoing outage = %s (explained %v): %s", f.Anomaly.Type, f.Anomaly.Evidence.EventExplainsShift, f.Anomaly.Reason)
+	}
+}
+
+// The P1 must not depend on the order of the rows: M-109 and M-112 tie on the
+// score, and the tie is broken by type (a real anomaly first), not by input order.
+func TestPriorityDoesNotDependOnInputOrder(t *testing.T) {
+	for _, f := range fixtures(t) {
+		want := analyze(f)
+		in := f.input
+		in.Readings = append([]domain.Reading(nil), f.input.Readings...)
+		in.Meters = append([]domain.Meter(nil), f.input.Meters...)
+		for i, j := 0, len(in.Readings)-1; i < j; i, j = i+1, j-1 {
+			in.Readings[i], in.Readings[j] = in.Readings[j], in.Readings[i]
+		}
+		for i, j := 0, len(in.Meters)-1; i < j; i, j = i+1, j-1 {
+			in.Meters[i], in.Meters[j] = in.Meters[j], in.Meters[i]
+		}
+		got := analysis.New(analysis.DefaultConfig()).Analyze(in, nil)
+		for i := range want.Findings {
+			if got.Findings[i].Anomaly.MeterID != want.Findings[i].Anomaly.MeterID {
+				t.Fatalf("%s: rank %d = %s with reversed input, %s otherwise", f.name, i+1, got.Findings[i].Anomaly.MeterID, want.Findings[i].Anomaly.MeterID)
+			}
+		}
+		if got.Findings[0].Anomaly.MeterID != "M-109" {
+			t.Fatalf("%s: P1 = %s", f.name, got.Findings[0].Anomaly.MeterID)
+		}
+	}
+}
+
+func TestDuplicatedFileDoesNotChangeTheResult(t *testing.T) {
+	f := fixtures(t)[len(fixtures(t))-1]
+	want := analyze(f)
+	in := f.input
+	in.Readings = append(append([]domain.Reading(nil), f.input.Readings...), f.input.Readings...)
+	got := analysis.New(analysis.DefaultConfig()).Analyze(in, nil)
+	if len(got.Findings) != len(want.Findings) {
+		t.Fatalf("findings = %d, want %d", len(got.Findings), len(want.Findings))
+	}
+	for id, s := range got.Stats {
+		if s.Status != want.Stats[id].Status || s.CurrentKWh != want.Stats[id].CurrentKWh {
+			t.Fatalf("%s changed with a duplicated file: %s %.1f vs %s %.1f", id, s.Status, s.CurrentKWh, want.Stats[id].Status, want.Stats[id].CurrentKWh)
+		}
+	}
+}
+
+// A gap in the data is a data-quality issue, not a drop in consumption.
+func TestMissingHoursAreDataQualityNotADrop(t *testing.T) {
+	f := fixtures(t)[len(fixtures(t))-1]
+	in := f.input
+	last := f.input.Readings[len(f.input.Readings)-1].Timestamp
+	in.Readings = nil
+	for _, r := range f.input.Readings {
+		if r.MeterID == "M-101" && last.Sub(r.Timestamp) < 10*time.Hour && last.Sub(r.Timestamp) >= 2*time.Hour {
+			continue // 8 hours missing on the last day
+		}
+		in.Readings = append(in.Readings, r)
+	}
+	res := analysis.New(analysis.DefaultConfig()).Analyze(in, nil)
+	s := res.Stats["M-101"]
+	if s.MissingHours != 8 || math.Abs(s.VariationPct) > 10 {
+		t.Fatalf("M-101: missing %d, variation %.1f%%", s.MissingHours, s.VariationPct)
+	}
+	fd := findingFor(res, "M-101")
+	if fd == nil || fd.Anomaly.Type != domain.DataQuality || !signalCodes(fd)["MISSING_HOURS"] {
+		t.Fatalf("M-101 finding = %+v", fd)
 	}
 }

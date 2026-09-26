@@ -281,7 +281,6 @@ function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: Return
                   {s}
                 </span>
               ))}
-              <span className="font-mono text-xs text-paper-muted">expected_results.csv · no se usa: reservado al evaluador</span>
               <span>Evidencia de cada ficha guardada con el análisis #{r.run_id}.</span>
             </div>
             <div className="flex flex-col gap-1">
@@ -335,7 +334,7 @@ export function ReportPage() {
 
   const toc = SECTIONS.filter((s) => mode === 'full' || s.exec)
   return (
-    <div className="grid min-h-0 flex-1 lg:grid-cols-[260px_minmax(0,1fr)]">
+    <div className="grid min-h-0 flex-1 lg:grid-cols-[260px_minmax(0,1fr)] print:block">
       <aside className="flex flex-col gap-5 border-r border-line bg-panel-2 px-5 py-5 print:hidden">
         <div className="flex flex-col gap-1">
           <Label>ANÁLISIS #{r.run_id}</Label>
@@ -371,7 +370,7 @@ export function ReportPage() {
           <Button onClick={() => window.print()}>EXPORTAR PDF</Button>
         </div>
       </aside>
-      <div className="min-h-0 overflow-y-auto bg-[#e9eaee] py-6">
+      <div className="min-h-0 overflow-y-auto bg-[#e9eaee] py-6 print:overflow-visible print:bg-white print:py-0">
         <ReportBody r={r} mode={mode} review={review} />
       </div>
     </div>

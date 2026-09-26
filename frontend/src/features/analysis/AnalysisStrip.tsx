@@ -45,7 +45,7 @@ export function AnalysisStrip({ run, onClose, onGoAnomalies, onGoReport }: Props
   return (
     <section
       aria-label="Run AI Analysis"
-      className="relative grid shrink-0 border-b border-line bg-panel-2"
+      className="relative grid shrink-0 border-b border-line bg-panel-2 print:hidden"
       style={{ gridTemplateColumns: `270px repeat(${run.steps.length}, minmax(0, 1fr)) 48px` }}
     >
       <span className="absolute top-0 left-0 h-0.5 bg-accent transition-[width] duration-300" style={{ width: `${progress}%` }} />

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/yefersongallo/bia-energy/backend/internal/analysis"
 	"github.com/yefersongallo/bia-energy/backend/internal/domain"
@@ -150,26 +152,50 @@ func (s *Service) AddAction(ctx context.Context, id, actor string, in ActionInpu
 	if !ok {
 		return AnomalyDetail{}, fmt.Errorf("%w: unknown action %q", ErrInvalid, in.Action)
 	}
-	if len(in.Note) > 2000 {
-		return AnomalyDetail{}, fmt.Errorf("%w: note too long", ErrInvalid)
+	note := strings.TrimSpace(in.Note)
+	if err := validNote(note); err != nil {
+		return AnomalyDetail{}, err
 	}
+	s.lifeMu.Lock()
+	defer s.lifeMu.Unlock()
 	a, err := s.store.Anomaly(ctx, id)
 	if err != nil {
 		return AnomalyDetail{}, err
 	}
+	if to != "" && to != a.Status && !domain.CanTransition(a.Status, to) &&
+		!(to == domain.AnomalyInProgress && a.Status == domain.AnomalyOpen) {
+		return AnomalyDetail{}, fmt.Errorf("%w: %s → %s", ErrConflict, a.Status, to)
+	}
 	if to != "" && to != a.Status {
 		if to == domain.AnomalyInProgress && a.Status == domain.AnomalyOpen {
-			if _, err := s.UpdateAnomalyStatus(ctx, id, domain.AnomalyAcknowledged); err != nil {
+			if _, err := s.updateStatus(ctx, id, domain.AnomalyAcknowledged); err != nil {
 				return AnomalyDetail{}, err
 			}
 		}
-		if _, err := s.UpdateAnomalyStatus(ctx, id, to); err != nil {
+		if _, err := s.updateStatus(ctx, id, to); err != nil {
 			return AnomalyDetail{}, err
 		}
 	}
-	act := domain.AnomalyAction{ID: newID("ACT", s.opts.Clock()), AnomalyID: id, Action: strings.ToLower(in.Action), Note: strings.TrimSpace(in.Note), Status: to, Actor: actor, At: s.opts.Clock()}
+	act := domain.AnomalyAction{ID: newID("ACT", s.opts.Clock()), AnomalyID: id, Action: strings.ToLower(in.Action), Note: note, Status: to, Actor: actor, At: s.opts.Clock()}
 	if err := s.store.AddAction(ctx, act); err != nil {
 		return AnomalyDetail{}, err
 	}
 	return s.Anomaly(ctx, id)
+}
+
+// validNote accepts up to 2000 characters of printable text (new lines and
+// tabs allowed); control characters such as NUL are rejected before any change.
+func validNote(note string) error {
+	if !utf8.ValidString(note) {
+		return fmt.Errorf("%w: note is not valid UTF-8", ErrInvalid)
+	}
+	if utf8.RuneCountInString(note) > 2000 {
+		return fmt.Errorf("%w: note longer than 2000 characters", ErrInvalid)
+	}
+	for _, r := range note {
+		if unicode.IsControl(r) && r != '\n' && r != '\t' && r != '\r' {
+			return fmt.Errorf("%w: note contains control characters", ErrInvalid)
+		}
+	}
+	return nil
 }

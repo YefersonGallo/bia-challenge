@@ -3,6 +3,7 @@
 package ingest
 
 import (
+	"bufio"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -144,19 +145,36 @@ func parseTime(s string) (time.Time, error) {
 
 func parseFloat(s string) (float64, error) {
 	if s == "" {
-		return 0, nil
+		return 0, errors.New("empty value")
 	}
 	return strconv.ParseFloat(strings.ReplaceAll(s, ",", "."), 64)
 }
 
-// ReadReadings parses readings.csv.
+// newReader detects the separator from the header line: "," or ";" (the
+// default of spreadsheets in es-CO, where "," is the decimal mark).
+func newReader(r io.Reader) *csv.Reader {
+	br := bufio.NewReader(r)
+	first, _ := br.Peek(4096)
+	line := string(first)
+	if i := strings.IndexAny(line, "\r\n"); i >= 0 {
+		line = line[:i]
+	}
+	cr := csv.NewReader(br)
+	if strings.Count(line, ";") > strings.Count(line, ",") {
+		cr.Comma = ';'
+	}
+	return cr
+}
+
+// ReadReadings parses readings.csv. Every column is required and every value
+// must be present: a missing voltage read as 0 would flag every meter.
 func ReadReadings(r io.Reader) ([]domain.Reading, error) {
-	cr := csv.NewReader(r)
+	cr := newReader(r)
 	h, err := readHeader(cr)
 	if err != nil {
 		return nil, err
 	}
-	if err := h.require("meter_id", "timestamp", "consumption_kwh"); err != nil {
+	if err := h.require("meter_id", "timestamp", "consumption_kwh", "voltage_v", "current_a", "power_factor"); err != nil {
 		return nil, err
 	}
 	var out []domain.Reading
@@ -169,6 +187,9 @@ func ReadReadings(r io.Reader) ([]domain.Reading, error) {
 		line++
 		if err != nil {
 			return nil, fmt.Errorf("line %d: %w", line, err)
+		}
+		if h.get(rec, "meter_id") == "" {
+			return nil, fmt.Errorf("line %d: meter_id: empty value", line)
 		}
 		ts, err := parseTime(h.get(rec, "timestamp"))
 		if err != nil {
@@ -190,7 +211,7 @@ func ReadReadings(r io.Reader) ([]domain.Reading, error) {
 
 // ReadEvents parses events.csv.
 func ReadEvents(r io.Reader) ([]domain.Event, error) {
-	cr := csv.NewReader(r)
+	cr := newReader(r)
 	h, err := readHeader(cr)
 	if err != nil {
 		return nil, err
@@ -205,11 +226,14 @@ func ReadEvents(r io.Reader) ([]domain.Event, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("events line %d: %w", i+1, err)
 		}
 		ts, err := parseTime(h.get(rec, "timestamp"))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("events line %d: %w", i+1, err)
+		}
+		if h.get(rec, "meter_id") == "" || h.get(rec, "type") == "" {
+			return nil, fmt.Errorf("events line %d: meter_id and type are required", i+1)
 		}
 		id := h.get(rec, "id")
 		if id == "" {
@@ -222,7 +246,7 @@ func ReadEvents(r io.Reader) ([]domain.Event, error) {
 
 // ReadMeters parses the optional meters.csv (meter_id,name,location).
 func ReadMeters(r io.Reader) ([]domain.Meter, error) {
-	cr := csv.NewReader(r)
+	cr := newReader(r)
 	h, err := readHeader(cr)
 	if err != nil {
 		return nil, err

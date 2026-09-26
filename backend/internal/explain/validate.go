@@ -26,9 +26,13 @@ func parseNumber(s string) (float64, bool) {
 	return v, err == nil
 }
 
+func round1(v float64) float64 { return math.Round(v*10) / 10 }
+
 // allowedNumbers collects every number that may legitimately appear in an
-// explanation of this evidence.
-func allowedNumbers(ev domain.Evidence) []float64 {
+// explanation of this anomaly: the evidence, the figures derived from it that
+// are sent to the model (extra kWh, impact) and the confidence.
+func allowedNumbers(a domain.Anomaly) []float64 {
+	ev := a.Evidence
 	add := func(out []float64, vs ...float64) []float64 {
 		for _, v := range vs {
 			out = append(out, math.Abs(v))
@@ -38,7 +42,12 @@ func allowedNumbers(ev domain.Evidence) []float64 {
 	var out []float64
 	out = add(out, ev.BaselineKWh, ev.CurrentKWh, ev.VariationPct, float64(ev.OnsetDay), float64(ev.EndDay),
 		float64(ev.PersistentHours), ev.NightRatio, float64(ev.InvalidReadings), ev.PhysicalCoherence*100, (1-ev.PhysicalCoherence)*100,
-		ev.ShiftPct, ev.BaselineKWh/24, ev.CurrentKWh/24, 24, 7, 14)
+		ev.ShiftPct, ev.BaselineKWh/24, ev.CurrentKWh/24, 24, 7, 14,
+		ev.CurrentKWh-ev.BaselineKWh, a.Confidence, a.Confidence*100)
+	if im := a.Impact; im != nil {
+		out = add(out, im.ExtraKWhPerDay, im.ExtraKWhPerMonth, im.ExtraKWhSoFar, im.CostPerMonthCOP, im.CostPerMonthCOP/1e6,
+			im.TariffCOPPerKWh, im.PowerFactor, im.ReactiveRatio, im.ReactiveExcess, im.ReactiveKVArhDay, 30, 0.5)
+	}
 	if ev.Onset != nil {
 		out = add(out, float64(ev.Onset.Day()), float64(ev.Onset.Hour()))
 	}
@@ -74,7 +83,11 @@ func grounded(v float64, allowed []float64) bool {
 		return true
 	}
 	for _, a := range allowed {
-		tol := math.Max(0.06, math.Abs(a)*0.015)
+		// Relative tolerance for rounding, and ±0,5 so "555" matches 555,3.
+		tol := math.Max(0.5, math.Abs(a)*0.015)
+		if v != math.Trunc(v) || math.Abs(a) < 10 {
+			tol = math.Max(0.06, math.Abs(a)*0.015)
+		}
 		if math.Abs(v-a) <= tol {
 			return true
 		}
@@ -83,11 +96,11 @@ func grounded(v float64, allowed []float64) bool {
 }
 
 // Validate rejects explanations that cite numbers not present in the evidence.
-func Validate(e Explanation, ev domain.Evidence) error {
+func Validate(e Explanation, a domain.Anomaly) error {
 	if strings.TrimSpace(e.Reason) == "" || strings.TrimSpace(e.RecommendedAction) == "" {
 		return fmt.Errorf("empty reason or action")
 	}
-	allowed := allowedNumbers(ev)
+	allowed := allowedNumbers(a)
 	texts := append([]string{e.Reason, e.RecommendedAction, e.EvidenceSummary}, e.NextSteps...)
 	for _, t := range texts {
 		for _, m := range numberRe.FindAllString(t, -1) {

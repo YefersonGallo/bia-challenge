@@ -33,11 +33,21 @@ export function useAnalysis() {
     }
   }, [current?.status, invalidate])
 
+  // After a reload the store forgets the run it followed: if the latest run is
+  // still in progress, follow it again so the strip comes back.
+  useEffect(() => {
+    if (!runId && current && isRunning(current)) follow(current.id)
+  }, [runId, current, follow])
+
+  const busy = isRunning(current) || start.isPending
   return {
     run: current,
-    running: isRunning(current) || start.isPending,
+    running: busy,
     progress: runProgress(current),
-    start: () => start.mutate(undefined, { onSuccess: (r) => follow(r.id) }),
+    // A double click must not send two requests.
+    start: () => {
+      if (!busy) start.mutate(undefined, { onSuccess: (r) => follow(r.id) })
+    },
     startError: start.error,
   }
 }

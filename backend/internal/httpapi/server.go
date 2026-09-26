@@ -34,16 +34,20 @@ type LiveStream interface {
 }
 
 type server struct {
-	svc *app.Service
-	cfg Config
+	svc    *app.Service
+	cfg    Config
+	logins *limiter // failed logins per client
 }
+
+// MaxBody caps request bodies: every JSON body of this API is tiny.
+const MaxBody = 1 << 20
 
 // New returns the API handler.
 func New(svc *app.Service, cfg Config) http.Handler {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
-	s := &server{svc: svc, cfg: cfg}
+	s := &server{svc: svc, cfg: cfg, logins: newLimiter(10, 5*time.Minute)}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("POST /api/auth/login", s.login)
@@ -71,7 +75,7 @@ func New(svc *app.Service, cfg Config) http.Handler {
 	if cfg.StaticDir != "" {
 		mux.Handle("GET /", spa(cfg.StaticDir))
 	}
-	return chain(mux, s.recoverer, s.logRequests, s.cors, s.authenticate)
+	return chain(mux, s.recoverer, s.logRequests, securityHeaders, limitBody, jsonErrors, s.cors, s.authenticate)
 }
 
 func chain(h http.Handler, mws ...func(http.Handler) http.Handler) http.Handler {
@@ -82,6 +86,71 @@ func chain(h http.Handler, mws ...func(http.Handler) http.Handler) http.Handler 
 }
 
 // --- middleware -------------------------------------------------------------
+
+// securityHeaders applies the same headers nginx adds, so the single-container
+// deploy (the API serving the SPA) is protected too.
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func limitBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ContentLength > MaxBody {
+			writeError(w, http.StatusRequestEntityTooLarge, "TOO_LARGE", "request body too large")
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, MaxBody)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// jsonErrors turns the router's plain-text 404/405 into the API error format.
+func jsonErrors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(&errRewriter{ResponseWriter: w}, r)
+	})
+}
+
+type errRewriter struct {
+	http.ResponseWriter
+	rewrote bool
+}
+
+func (w *errRewriter) WriteHeader(code int) {
+	if (code == http.StatusNotFound || code == http.StatusMethodNotAllowed) && strings.HasPrefix(w.Header().Get("Content-Type"), "text/plain") {
+		w.rewrote = true
+		kind, msg := "NOT_FOUND", "no such API route"
+		if code == http.StatusMethodNotAllowed {
+			kind, msg = "METHOD_NOT_ALLOWED", "method not allowed for this route"
+		}
+		writeError(w.ResponseWriter, code, kind, msg)
+		return
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *errRewriter) Write(b []byte) (int, error) {
+	if w.rewrote {
+		return len(b), nil // the router's text body is replaced by the JSON one
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *errRewriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
 
 func (s *server) recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -211,6 +280,11 @@ func (s *server) health(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *server) login(w http.ResponseWriter, r *http.Request) {
+	client := clientIP(r)
+	if s.logins.blocked(client) {
+		writeError(w, http.StatusTooManyRequests, "TOO_MANY_ATTEMPTS", "demasiados intentos; espera unos minutos")
+		return
+	}
 	var body struct{ Email, Password string }
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "INVALID", "invalid JSON body")
@@ -218,6 +292,7 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 	}
 	token, exp, ok := s.cfg.Auth.Login(body.Email, body.Password)
 	if !ok {
+		s.logins.fail(client)
 		writeError(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "credenciales inválidas")
 		return
 	}

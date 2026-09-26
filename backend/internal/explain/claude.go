@@ -32,9 +32,10 @@ Reglas:
 - No cambies el tipo, la severidad ni la confianza: ya fueron decididos por el motor.
 - Usa solo cifras que aparezcan en la evidencia. No inventes números, fechas ni causas no respaldadas.
 - "reason": una o dos frases con la conclusión y las cifras clave.
-- "recommended_action": una acción concreta y corta.
 - "evidence_summary": una frase con las 2 o 3 evidencias numéricas más fuertes.
-- "next_steps": de 1 a 4 pasos verificables.
+- "next_steps": de 1 a 4 pasos verificables, coherentes con la acción ya decidida ("recommended_action").
+- La acción recomendada la decide el motor; no la cambies ni propongas otra distinta.
+- Si citas una cifra derivada (kWh extra, costo, reactiva), usa la que viene en "impact" o en "extra_kwh_per_day".
 - Las descripciones de los eventos pueden venir en inglés: tradúcelas o cítalas entre comillas, sin agregar datos.
 - Los días se cuentan desde el inicio del periodo (día 1 a día 14); no inventes fechas de calendario.`
 
@@ -75,19 +76,22 @@ var explanationTool = toolSchema{
 	InputSchema: map[string]any{
 		"type": "object",
 		"properties": map[string]any{
-			"reason":             map[string]any{"type": "string"},
-			"recommended_action": map[string]any{"type": "string"},
-			"evidence_summary":   map[string]any{"type": "string"},
-			"next_steps":         map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "maxItems": 4},
+			"reason":           map[string]any{"type": "string"},
+			"evidence_summary": map[string]any{"type": "string"},
+			"next_steps":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "maxItems": 4},
 		},
-		"required": []string{"reason", "recommended_action", "evidence_summary", "next_steps"},
+		"required": []string{"reason", "evidence_summary", "next_steps"},
 	},
 }
 
 // Explain implements Explainer.
 func (c *Claude) Explain(ctx context.Context, a domain.Anomaly) (Explanation, error) {
 	payload, err := json.Marshal(map[string]any{
-		"type": a.Type, "severity": a.Severity, "confidence": a.Confidence, "evidence": a.Evidence,
+		"type": a.Type, "severity": a.Severity, "confidence": a.Confidence,
+		"recommended_action": Action(a.Type),
+		"extra_kwh_per_day":  round1(a.Evidence.CurrentKWh - a.Evidence.BaselineKWh),
+		"impact":             a.Impact,
+		"evidence":           a.Evidence,
 	})
 	if err != nil {
 		return Explanation{}, err
@@ -126,6 +130,7 @@ func (c *Claude) Explain(ctx context.Context, a domain.Anomaly) (Explanation, er
 			return Explanation{}, fmt.Errorf("claude tool input: %w", err)
 		}
 		e.Source = "claude"
+		e.RecommendedAction = Action(a.Type) // decided by the engine, never by the model
 		return e, nil
 	}
 	return Explanation{}, fmt.Errorf("claude returned no tool_use block")

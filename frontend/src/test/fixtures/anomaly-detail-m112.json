@@ -1,8 +1,8 @@
 {
-  "id": "A-0926-1310-7596-M-112",
-  "analysis_id": "A-0926-1310-7596",
+  "id": "A-0926-2323-99bb2edae254-M-112",
+  "analysis_id": "A-0926-2323-99bb2edae254",
   "meter_id": "M-112",
-  "detected_at": "2026-09-26T13:10:11.600960209Z",
+  "detected_at": "2026-09-26T23:23:17.865874067Z",
   "type": "DATA_QUALITY",
   "severity": "HIGH",
   "confidence": 0.97,
@@ -41,7 +41,7 @@
       },
       {
         "code": "PF_JUMPS",
-        "description": "12 saltos bruscos del factor de potencia (0,58–0,98)",
+        "description": "12 saltos bruscos del factor de potencia (0,58–0,72)",
         "value": 12
       },
       {
@@ -110,7 +110,7 @@
     "onset": "2026-09-13T00:00:00Z",
     "event_explains_shift": false
   },
-  "evidence_summary": "16 lecturas con voltaje fuera de 209–231 V (202–241 V) · 27 saltos de voltaje de más de 15 V entre horas seguidas · 12 saltos bruscos del factor de potencia (0,58–0,98)",
+  "evidence_summary": "16 lecturas con voltaje fuera de 209–231 V (202–241 V) · 27 saltos de voltaje de más de 15 V entre horas seguidas · 12 saltos bruscos del factor de potencia (0,58–0,72)",
   "confidence_breakdown": [
     {
       "key": "magnitude",

@@ -1,7 +1,8 @@
 // Package explain turns the engine's evidence into a human explanation.
 //
-// The engine decides type, severity, confidence and priority. The explainer
-// only writes words: a reason, a recommended action and next steps. Every
+// The engine decides type, severity, confidence, priority and the recommended
+// action (one per type). The explainer only writes words: a reason, a summary
+// of the evidence and next steps. Every
 // number it writes must exist in the evidence, otherwise the text is rejected
 // and the deterministic template is used instead.
 package explain
@@ -39,13 +40,15 @@ var ErrUngrounded = errors.New("explanation cites numbers that are not in the ev
 // one on any error (network, timeout, invalid output, ungrounded numbers).
 type WithFallback struct {
 	Primary, Fallback Explainer
-	Timeout           time.Duration // limit for the primary (the plan asks for 10 s); 0 = none
+	Timeout           time.Duration // limit for the primary; 0 = none
 	OnFallback        func(meterID string, err error)
+	OnSuccess         func(meterID string, took time.Duration) // optional: log each accepted answer
 }
 
 // Cached remembers explanations by a hash of the evidence (plus type, severity
 // and confidence): running the analysis again with the same data does not call
-// the LLM again. Template results are cached too; they are cheap either way.
+// the LLM again. Only answers that pass Validate are kept, so a rejected answer
+// is asked again on the next analysis instead of pinning the template.
 type Cached struct {
 	Next Explainer
 	mu   sync.Mutex
@@ -64,6 +67,9 @@ func (c *Cached) Explain(ctx context.Context, a domain.Anomaly) (Explanation, er
 	e, err := c.Next.Explain(ctx, a)
 	if err != nil {
 		return e, err
+	}
+	if err := Validate(e, a); err != nil {
+		return Explanation{}, err
 	}
 	c.mu.Lock()
 	if c.m == nil {
@@ -94,12 +100,14 @@ func (w WithFallback) Explain(ctx context.Context, a domain.Anomaly) (Explanatio
 			pctx, cancel = context.WithTimeout(ctx, w.Timeout)
 			defer cancel()
 		}
+		start := time.Now()
 		exp, err := w.Primary.Explain(pctx, a)
 		if err == nil {
-			if verr := Validate(exp, a.Evidence); verr == nil {
+			if err = Validate(exp, a); err == nil {
+				if w.OnSuccess != nil {
+					w.OnSuccess(a.MeterID, time.Since(start))
+				}
 				return exp, nil
-			} else {
-				err = verr
 			}
 		}
 		if w.OnFallback != nil {

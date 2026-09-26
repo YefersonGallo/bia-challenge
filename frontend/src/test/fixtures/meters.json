@@ -28,7 +28,7 @@
       2207.6
     ],
     "anomaly": {
-      "id": "A-0926-1310-7596-M-109",
+      "id": "A-0926-2323-99bb2edae254-M-109",
       "type": "REAL_ANOMALY",
       "severity": "HIGH",
       "rank": 1,
@@ -65,7 +65,7 @@
       662.65
     ],
     "anomaly": {
-      "id": "A-0926-1310-7596-M-112",
+      "id": "A-0926-2323-99bb2edae254-M-112",
       "type": "DATA_QUALITY",
       "severity": "HIGH",
       "rank": 2,
@@ -102,7 +102,7 @@
       1725.63
     ],
     "anomaly": {
-      "id": "A-0926-1310-7596-M-104",
+      "id": "A-0926-2323-99bb2edae254-M-104",
       "type": "EXPLAINABLE_ANOMALY",
       "severity": "MEDIUM",
       "rank": 3,
@@ -139,7 +139,7 @@
       1362.11
     ],
     "anomaly": {
-      "id": "A-0926-1310-7596-M-106",
+      "id": "A-0926-2323-99bb2edae254-M-106",
       "type": "FALSE_POSITIVE",
       "severity": "LOW",
       "rank": 4,

@@ -131,8 +131,10 @@ type MeterStats struct {
 	Coherence        float64            `json:"physical_coherence"`
 	IssueOnset       *time.Time         `json:"issue_onset,omitempty"`
 	IssueHours       int                `json:"issue_hours"`
-	VoltageRange     [2]float64         `json:"voltage_range"` // min/max of suspicious voltages
-	PFRange          [2]float64         `json:"pf_range"`      // min/max of suspicious power factors
+	VoltageRange     [2]float64         `json:"voltage_range"`   // min/max of suspicious voltages
+	PFRange          [2]float64         `json:"pf_range"`        // min/max of the power factors that jumped
+	MissingHours     int                `json:"missing_hours"`   // hours without a reading between the first and the last one
+	DuplicateHours   int                `json:"duplicate_hours"` // repeated readings of the same hour (only the first one is used)
 	Days             []DayPoint         `json:"days"`
 	HourlyBaseline   [24]float64        `json:"hourly_baseline"`
 	HourlyCurrent    [24]float64        `json:"hourly_current"`
@@ -180,7 +182,7 @@ type Electrical struct {
 
 // QualityIssue reports whether the meter's readings cannot be trusted.
 func (s MeterStats) QualityIssue(c Config) bool {
-	return s.InvalidReadings >= c.MinInvalid || s.Coherence < c.MinCoherence
+	return s.InvalidReadings >= c.MinInvalid || s.Coherence < c.MinCoherence || s.MissingHours+s.DuplicateHours >= c.MinInvalid
 }
 
 // Finding is a classified anomaly before explanation.
@@ -307,9 +309,28 @@ func localMedian(xs []float64, window int) []float64 {
 // ComputeStats builds the rule-layer statistics of one meter (readings sorted).
 func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 	s := MeterStats{Status: domain.StatusOK, StatusReason: "dentro del rango esperado", Coherence: 1}
-	n := len(rs)
-	if n == 0 {
+	if len(rs) == 0 {
 		return s
+	}
+	// One reading per hour: repeated hours are counted and dropped (summing them
+	// would double the consumption), and gaps are counted as missing hours.
+	uniq := make([]domain.Reading, 0, len(rs))
+	for _, r := range rs {
+		if len(uniq) > 0 && r.Timestamp.Truncate(time.Hour).Equal(uniq[len(uniq)-1].Timestamp.Truncate(time.Hour)) {
+			// An exact copy (a file loaded twice) is harmless; two different
+			// readings for the same hour are a data problem.
+			p := uniq[len(uniq)-1]
+			if p.ConsumptionKWh != r.ConsumptionKWh || p.VoltageV != r.VoltageV || p.CurrentA != r.CurrentA || p.PowerFactor != r.PowerFactor {
+				s.DuplicateHours++
+			}
+			continue
+		}
+		uniq = append(uniq, r)
+	}
+	rs = uniq
+	n := len(rs)
+	if span := int(rs[n-1].Timestamp.Sub(rs[0].Timestamp).Hours()) + 1; span > n {
+		s.MissingHours = span - n
 	}
 	c := e.cfg
 	s.Readings = n
@@ -398,8 +419,12 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 				first = i
 			}
 			last = i
-			vr[0], vr[1] = math.Min(vr[0], r.VoltageV), math.Max(vr[1], r.VoltageV)
-			pr[0], pr[1] = math.Min(pr[0], r.PowerFactor), math.Max(pr[1], r.PowerFactor)
+			if vAnom || vJump {
+				vr[0], vr[1] = math.Min(vr[0], r.VoltageV), math.Max(vr[1], r.VoltageV)
+			}
+			if pfJ {
+				pr[0], pr[1] = math.Min(pr[0], r.PowerFactor), math.Max(pr[1], r.PowerFactor)
+			}
 		}
 	}
 	if checked > 0 {
@@ -442,8 +467,12 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 		t := rs[first].Timestamp
 		s.IssueOnset = &t
 		s.IssueHours = int(rs[last].Timestamp.Sub(t).Hours()) + 1
-		s.VoltageRange = [2]float64{round(vr[0], 1), round(vr[1], 1)}
-		s.PFRange = [2]float64{round(pr[0], 2), round(pr[1], 2)}
+		if !math.IsInf(vr[0], 1) {
+			s.VoltageRange = [2]float64{round(vr[0], 1), round(vr[1], 1)}
+		}
+		if !math.IsInf(pr[0], 1) {
+			s.PFRange = [2]float64{round(pr[0], 2), round(pr[1], 2)}
+		}
 	}
 
 	// --- 2. hour-of-day baseline (median + MAD over plausible readings) ---------
@@ -471,8 +500,10 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 	lastTS := rs[n-1].Timestamp
 	cur24 := func(i int) bool { return lastTS.Sub(rs[i].Timestamp) < 24*time.Hour }
 	var curCount [24]int
+	curN := 0
 	for i, r := range rs {
 		if cur24(i) {
+			curN++
 			s.CurrentKWh += r.ConsumptionKWh
 			h := r.Timestamp.Hour()
 			s.HourlyCurrent[h] += r.ConsumptionKWh
@@ -483,6 +514,11 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 		if curCount[h] > 0 {
 			s.HourlyCurrent[h] = round(s.HourlyCurrent[h]/float64(curCount[h]), 3)
 		}
+	}
+	if curN > 0 && curN < 24 {
+		// Missing hours in the last 24 h: compare like with like instead of
+		// reporting a drop that is only missing data.
+		s.CurrentKWh *= 24 / float64(curN)
 	}
 	s.BaselineKWh = round(expectedDay, 1)
 	s.VariationPct = round(pctChange(expectedDay, s.CurrentKWh), 1)
@@ -694,6 +730,8 @@ func (e *Engine) status(s MeterStats) (domain.MeterStatus, string) {
 	switch {
 	case s.VariationPct >= e.cfg.CriticalPct:
 		return domain.StatusCritical, fmt.Sprintf("variación %s sobre el baseline", fmtPct(s.VariationPct))
+	case s.QualityIssue(e.cfg) && s.InvalidReadings < e.cfg.MinInvalid:
+		return domain.StatusAlert, fmt.Sprintf("%d horas faltantes y %d repetidas", s.MissingHours, s.DuplicateHours)
 	case s.QualityIssue(e.cfg):
 		return domain.StatusAlert, fmt.Sprintf("%d lecturas físicamente inconsistentes", s.InvalidReadings)
 	case math.Abs(s.VariationPct) >= e.cfg.ShiftThreshold*100:
@@ -786,6 +824,12 @@ func (e *Engine) classifyDataQuality(a *domain.Anomaly, ev *domain.Evidence, s M
 	}
 	if s.ZeroVoltage > 0 {
 		ev.Signals = append(ev.Signals, sig("ZERO_VOLTAGE", fmt.Sprintf("%d horas con 0 V y consumo positivo", s.ZeroVoltage), float64(s.ZeroVoltage)))
+	}
+	if s.MissingHours > 0 {
+		ev.Signals = append(ev.Signals, sig("MISSING_HOURS", fmt.Sprintf("%d horas sin lectura", s.MissingHours), float64(s.MissingHours)))
+	}
+	if s.DuplicateHours > 0 {
+		ev.Signals = append(ev.Signals, sig("DUPLICATE_READINGS", fmt.Sprintf("%d lecturas repetidas para la misma hora", s.DuplicateHours), float64(s.DuplicateHours)))
 	}
 	if math.Abs(s.VariationPct) < e.cfg.ShiftThreshold*100 && s.Episode == nil {
 		ev.Signals = append(ev.Signals, sig("STABLE_CONSUMPTION", fmt.Sprintf("Consumo estable (%s): no es un cambio de carga", fmtPct(s.VariationPct)), s.VariationPct))
@@ -910,6 +954,17 @@ func (e *Engine) matchEvents(meterID string, ep *Episode, events []domain.Event)
 				coherent = &c
 			}
 		}
+	}
+	if coherent != nil {
+		// The event that explains the change goes first: it is the one the
+		// explanation cites.
+		ordered := []domain.Event{*coherent}
+		for _, ev := range related {
+			if ev.ID != coherent.ID || ev.Timestamp != coherent.Timestamp {
+				ordered = append(ordered, ev)
+			}
+		}
+		related = ordered
 	}
 	return related, coherent, joinReasons(reasons)
 }
@@ -1080,7 +1135,28 @@ func Prioritize(fs []Finding) {
 		}
 		a.PriorityScore = round(w*a.Confidence*imp, 3)
 	}
-	sort.SliceStable(fs, func(i, j int) bool { return fs[i].Anomaly.PriorityScore > fs[j].Anomaly.PriorityScore })
+	// Ties are broken explicitly so the order never depends on the input order:
+	// a real anomaly before a data issue, then the larger energy impact, then the id.
+	typeRank := map[domain.AnomalyType]int{domain.RealAnomaly: 0, domain.DataQuality: 1, domain.ExplainableAnomaly: 2, domain.FalsePositive: 3}
+	extra := func(a domain.Anomaly) float64 {
+		if a.Impact == nil {
+			return 0
+		}
+		return a.Impact.ExtraKWhPerDay
+	}
+	sort.SliceStable(fs, func(i, j int) bool {
+		a, b := fs[i].Anomaly, fs[j].Anomaly
+		switch {
+		case a.PriorityScore != b.PriorityScore:
+			return a.PriorityScore > b.PriorityScore
+		case typeRank[a.Type] != typeRank[b.Type]:
+			return typeRank[a.Type] < typeRank[b.Type]
+		case extra(a) != extra(b):
+			return extra(a) > extra(b)
+		default:
+			return a.MeterID < b.MeterID
+		}
+	})
 	for i := range fs {
 		fs[i].Anomaly.Rank = i + 1
 	}
