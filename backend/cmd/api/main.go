@@ -15,6 +15,9 @@
 //	STEP_DELAY_MS      pause between pipeline steps for the UI (default 450)
 //	STATIC_DIR         serve the built SPA from this directory (single-container deploys)
 //	DB_FALLBACK_MEMORY "true" keeps the app up with the in-memory store if PostgreSQL is unreachable
+//	STREAM_STEP_MS     wall ms per simulated hour in the live replay (default 500)
+//	STREAM_START_DAY   first streamed day; earlier days are preloaded (default 7)
+//	STREAM_AUTOSTART   "true" starts the replay on boot
 package main
 
 import (
@@ -34,6 +37,7 @@ import (
 	"github.com/yefersongallo/bia-energy/backend/internal/explain"
 	"github.com/yefersongallo/bia-energy/backend/internal/httpapi"
 	"github.com/yefersongallo/bia-energy/backend/internal/ingest"
+	"github.com/yefersongallo/bia-energy/backend/internal/live"
 	"github.com/yefersongallo/bia-energy/backend/internal/store/memory"
 	"github.com/yefersongallo/bia-energy/backend/internal/store/postgres"
 )
@@ -91,7 +95,12 @@ func run(log *slog.Logger) error {
 		cfg.TariffCOPPerKWh = v
 	}
 	delay, _ := strconv.Atoi(env("STEP_DELAY_MS", "450"))
-	svc := app.New(store, analysis.New(cfg), explainer, app.Options{StepDelay: time.Duration(delay) * time.Millisecond, Logger: log})
+	engine := analysis.New(cfg)
+	runner, err := newRunner(ctx, store, engine, log)
+	if err != nil {
+		return err
+	}
+	svc := app.New(store, engine, explainer, app.Options{StepDelay: time.Duration(delay) * time.Millisecond, Logger: log})
 
 	secret := os.Getenv("AUTH_SECRET")
 	if secret == "" {
@@ -101,6 +110,7 @@ func run(log *slog.Logger) error {
 	handler := httpapi.New(svc, httpapi.Config{AIProvider: aiProvider, StaticDir: os.Getenv("STATIC_DIR"),
 		Auth:       httpapi.Auth{Secret: []byte(secret), User: env("DEMO_USER", "operador@vatio.demo"), Password: env("DEMO_PASSWORD", "demo"), TTL: 12 * time.Hour},
 		CORSOrigin: env("CORS_ORIGIN", "*"),
+		Live:       runner,
 		Logger:     log,
 	})
 	srv := &http.Server{Addr: ":" + env("PORT", "8080"), Handler: handler, ReadHeaderTimeout: 10 * time.Second}
@@ -122,6 +132,33 @@ func run(log *slog.Logger) error {
 	err = srv.Shutdown(shutdown)
 	svc.Wait()
 	return err
+}
+
+// newRunner builds the hourly replay over the stored data and starts its clock loop.
+// It runs on its own goroutine and only reads the store: the batch analysis is unaffected.
+func newRunner(ctx context.Context, store app.Store, engine *analysis.Engine, log *slog.Logger) (*live.Runner, error) {
+	meters, err := store.Meters(ctx)
+	if err != nil {
+		return nil, err
+	}
+	readings, err := store.Readings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	events, err := store.Events(ctx)
+	if err != nil {
+		return nil, err
+	}
+	step, _ := strconv.Atoi(env("STREAM_STEP_MS", "500"))
+	day, _ := strconv.Atoi(env("STREAM_START_DAY", "7"))
+	r := live.NewRunner(engine, live.NewHub(2048), meters, readings, events, live.Options{StartDay: day, Step: time.Duration(step) * time.Millisecond})
+	go r.Loop(ctx)
+	if os.Getenv("STREAM_AUTOSTART") == "true" {
+		r.Control(live.ActionStart, 0)
+	}
+	st := r.State()
+	log.Info("live replay ready", "start", st.Start, "hours", st.TotalHours, "step_ms", step)
+	return r, nil
 }
 
 func openStore(ctx context.Context, log *slog.Logger) (app.Store, error) {

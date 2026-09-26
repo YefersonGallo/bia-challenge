@@ -20,12 +20,12 @@ function toError(status: number, statusText: string, body: unknown): ApiError {
   return new ApiError(status, typeof err === 'string' ? err : statusText)
 }
 
-const BASE = import.meta.env.VITE_API_URL ?? '/api'
+export const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
 /** Thin fetch wrapper: JSON in/out, bearer token, typed errors, logout on 401. */
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = useAuthStore.getState().token
-  const res = await fetch(BASE + path, {
+  const res = await fetch(API_BASE + path, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

@@ -21,6 +21,43 @@ Los otros 8 medidores quedan en estado normal: no hay falsos positivos. Para ver
 
 ---
 
+
+> **Esta es la copia `bia-energy-live`**: el mismo proyecto más la **fase 7 del plan (streaming)**. Vive aparte para que el replay en vivo no afecte los tiempos ni la entrega principal (`bia-energy`). Todo lo demás es idéntico.
+
+## Replay en vivo (streaming)
+
+El dataset se reproduce hora a hora sobre un **reloj simulado**:
+
+- Los días 1–6 se **precargan**; desde el día 7, cada hora llega como un evento (500 ms por hora a velocidad 1×; `STREAM_STEP_MS`).
+- En cada hora el **motor por lotes** se vuelve a ejecutar sobre la ventana acumulada, con los eventos ya ocurridos (≈ 5 ms por ciclo). Es una desviación consciente del `Update` incremental del plan: el resultado final es por construcción el mismo que el del análisis por lotes, y un test lo verifica.
+- **Gestor de alertas**: un hallazgo abre una alerta `CANDIDATE`; si persiste 3 h simuladas pasa a `CONFIRMED`; si cambia de tipo o severidad se publica `updated`; si desaparece, o el motor la reclasifica como falso positivo, se cierra (`CLOSED`) con el motivo.
+- **Hub** con fan-out a todos los clientes y un buffer de los últimos 2.048 mensajes. Un cliente lento se desconecta y reanuda solo.
+
+Secuencia sobre los CSV oficiales:
+
+| Hora simulada | Cambio |
+|---|---|
+| D8 05:00 → 08:00 → 14:00 | M-106 candidata → confirmada (explicable) → cerrada como falso positivo al terminar la parada de 12 h |
+| D11 05:00 → 08:00 | M-104 candidata → confirmada (explicable) |
+| D12 19:00 → 22:00 | M-109 candidata → confirmada (anomalía real alta) |
+| D13 04:00 → 07:00 | M-112 candidata → confirmada (calidad de datos) |
+
+**API** (además de la del proyecto base):
+
+| Ruta | Uso |
+|---|---|
+| `GET /api/stream?token=` | Server-Sent Events. Primero `snapshot` (reloj, medidores con sus últimas 48 lecturas, alertas); luego `tick`, `alert`, `control` y `snapshot` tras un reinicio. Con `Last-Event-ID` solo se reenvía lo perdido. El token va en la URL porque `EventSource` no envía cabeceras |
+| `POST /api/stream/control` `{action, speed}` | `start`, `pause`, `reset`, `speed` (0,25–32) |
+| `GET /api/stream/state` | Reloj y alertas actuales |
+
+**Frontend**: pestaña **EN VIVO** con controles (iniciar, pausar, reiniciar, 1×–8×), reloj y avance, medidores con su curva de las últimas 48 h y su estado, alertas con su ciclo de vida y registro de cambios. En el header, el indicador LIVE con el reloj simulado; las alertas confirmadas, actualizadas y cerradas aparecen como notificaciones en cualquier pantalla. El estado vive en un store de Zustand alimentado por un único `EventSource`.
+
+**Variables**: `STREAM_STEP_MS` (500), `STREAM_START_DAY` (7), `STREAM_AUTOSTART` (`false`).
+
+**Tests**: consistencia batch vs. streaming en los dos datasets (mismos medidores, tipo y severidad; nada que el lote considere normal llega a confirmarse), M-109 confirmada ≥ 3 h después de su candidata, M-106 cerrada como falso positivo y nunca tratada como anomalía real, precarga, reanudación por `Last-Event-ID`, cliente lento, controles, SSE de punta a punta con `httptest`, y en el frontend los reducers, la página, las notificaciones y el hook con un `EventSource` simulado.
+
+**Límites**: las alertas en vivo están en memoria y se reinician con el servidor; en un despliegue con varias réplicas cada una tendría su propio reloj.
+
 ## Ejecutar
 
 ### Con Docker (recomendado)
@@ -297,7 +334,7 @@ CI (GitHub Actions) ejecuta lint, tests y build de ambos proyectos y construye l
   - No se implementa la regla `DQ_STUCK` (lecturas repetidas): en los CSV oficiales marcaba a los 12 medidores.
   - La ventana de eventos es ±3 h del punto de cambio (en lugar de ±24 h del inicio del día) y la de duración ±2 h.
   - La banda de `k` es relativa (±25 %) y exige apartarse de la propia **y** de la local, para no confundir un cambio de régimen con un error.
-  - El streaming (fase 7) vive en una copia aparte, `bia-energy-live`, para no afectar la entrega principal; allí el motor por lotes se vuelve a ejecutar sobre la ventana creciente en vez de un `Update` incremental.
+  - El streaming (fase 7) está en esta copia; el motor por lotes se vuelve a ejecutar sobre la ventana creciente en vez de un `Update` incremental.
 - **Límites**:
   - Con 14 días de datos, el baseline usa 7 y no captura estacionalidad semanal.
   - Los eventos vienen en inglés y se citan tal como fueron registrados; Claude los traduce al redactar.

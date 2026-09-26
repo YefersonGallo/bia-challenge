@@ -7,9 +7,10 @@ import { MeterDetailPage } from '@/features/meters/MeterDetailPage'
 import { AnomaliesPage } from '@/features/anomalies/AnomaliesPage'
 import { InvestigationPage } from '@/features/anomalies/InvestigationPage'
 import { ReportPage } from '@/features/report/ReportPage'
+import { LivePage } from '@/features/live/LivePage'
 import { AppShell } from './AppShell'
 
-/** Route table: Operación → Medidores → Detalle → Anomalías IA → Investigación → Reporte. */
+/** Route table: Operación → Medidores → Detalle → Anomalías IA → Investigación → Reporte → En vivo. */
 export const routes = [
   { path: '/login', element: <LoginPage /> },
   {
@@ -26,6 +27,7 @@ export const routes = [
       { path: 'anomalies', element: <AnomaliesPage /> },
       { path: 'anomalies/:id', element: <InvestigationPage /> },
       { path: 'report', element: <ReportPage /> },
+      { path: 'live', element: <LivePage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

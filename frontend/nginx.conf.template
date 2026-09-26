@@ -29,6 +29,17 @@ server {
     proxy_read_timeout 60s;
   }
 
+  # Live replay (Server-Sent Events): no buffering and a long read timeout.
+  location = /api/stream {
+    proxy_pass http://${API_UPSTREAM};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header Connection "";
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 1h;
+  }
+
   # Hashed assets can be cached forever.
   location /assets/ {
     expires 1y;

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/yefersongallo/bia-energy/backend/internal/analysis"
 	"github.com/yefersongallo/bia-energy/backend/internal/dataset"
@@ -353,5 +354,23 @@ func TestOutageDurationMustMatch(t *testing.T) {
 	f := findingFor(analysis.New(analysis.DefaultConfig()).Analyze(in, nil), "M-106")
 	if f.Anomaly.Evidence.EventExplainsShift {
 		t.Fatal("a 48 h outage must not explain a 12 h drop")
+	}
+}
+
+// Seen while it happens, an outage is shorter than announced: it still matches the
+// event until it exceeds the announced duration.
+func TestOngoingOutageMatchesItsEvent(t *testing.T) {
+	fx := challenge(t)
+	in := fx.input
+	cut := time.Date(2026, 9, 8, 7, 0, 0, 0, time.UTC) // 8 h into the 12 h outage
+	in.Readings = nil
+	for _, r := range fx.input.Readings {
+		if !r.Timestamp.After(cut) {
+			in.Readings = append(in.Readings, r)
+		}
+	}
+	f := findingFor(analysis.New(analysis.DefaultConfig()).Analyze(in, nil), "M-106")
+	if f.Anomaly.Type != domain.ExplainableAnomaly || !f.Anomaly.Evidence.EventExplainsShift {
+		t.Fatalf("ongoing outage = %s (explained %v): %s", f.Anomaly.Type, f.Anomaly.Evidence.EventExplainsShift, f.Anomaly.Reason)
 	}
 }

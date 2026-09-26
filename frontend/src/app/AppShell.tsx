@@ -6,6 +6,8 @@ import { useAuthStore } from '@/features/auth/authStore'
 import { AnalysisStrip } from '@/features/analysis/AnalysisStrip'
 import { useAnalysisUi } from '@/features/analysis/analysisStore'
 import { useAnalysis } from '@/features/analysis/useAnalysis'
+import { LiveIndicator, LiveToasts } from '@/features/live/LiveWidgets'
+import { useLiveStream } from '@/features/live/useLiveStream'
 
 function HeaderKpis() {
   const { data: s } = useSummary()
@@ -72,11 +74,13 @@ export function AppShell() {
   const logout = useAuthStore((s) => s.logout)
   const { stripOpen, close } = useAnalysisUi()
   const { run, running, start, startError } = useAnalysis()
+  useLiveStream()
 
   const nav = [
     { to: '/', label: 'OPERACIÓN', end: true },
     { to: '/meters', label: 'MEDIDORES' },
     { to: '/anomalies', label: 'ANOMALÍAS IA', badge: summary?.open_anomalies || undefined, badgeColor: 'var(--color-real)' },
+    { to: '/live', label: 'EN VIVO' },
     { to: '/report', label: 'REPORTE IA', badge: summary?.last_analysis?.status === 'COMPLETED' ? 'NUEVO' : undefined, badgeColor: 'var(--color-accent)' },
   ]
   const last = summary?.last_analysis
@@ -116,6 +120,7 @@ export function AppShell() {
         </nav>
         {pathname === '/' && <HeaderKpis />}
         <div className="ml-auto flex items-center gap-3 font-mono text-[11px]">
+          <LiveIndicator />
           <span className={running ? 'text-accent' : last ? 'text-ok' : 'text-muted'} title={last ? `Último análisis ${last.id}` : undefined}>
             {aiText}
           </span>
@@ -152,6 +157,7 @@ export function AppShell() {
       <main className="flex min-h-0 flex-1 flex-col">
         <Outlet />
       </main>
+      <LiveToasts />
     </div>
   )
 }

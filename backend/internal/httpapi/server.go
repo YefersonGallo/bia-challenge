@@ -12,15 +12,25 @@ import (
 
 	"github.com/yefersongallo/bia-energy/backend/internal/app"
 	"github.com/yefersongallo/bia-energy/backend/internal/domain"
+	"github.com/yefersongallo/bia-energy/backend/internal/live"
 )
 
 // Config of the HTTP layer.
 type Config struct {
 	Auth       Auth
-	CORSOrigin string // "*" or a specific origin; empty disables CORS headers
-	AIProvider string // shown by /api/health: "claude:<model>" or "template"
-	StaticDir  string // when set, the built SPA is served from here (single-container deploys)
+	CORSOrigin string     // "*" or a specific origin; empty disables CORS headers
+	AIProvider string     // shown by /api/health: "claude:<model>" or "template"
+	StaticDir  string     // when set, the built SPA is served from here (single-container deploys)
+	Live       LiveStream // optional: enables /api/stream (hourly replay with SSE)
 	Logger     *slog.Logger
+}
+
+// LiveStream is the port of the streaming replay (implemented by live.Runner).
+type LiveStream interface {
+	Subscribe(lastID uint64) (*live.Snapshot, uint64, []live.Message, chan live.Message, func())
+	State() live.State
+	Alerts() []live.Alert
+	Control(action string, speed float64) (live.State, bool)
 }
 
 type server struct {
@@ -53,6 +63,11 @@ func New(svc *app.Service, cfg Config) http.Handler {
 	mux.HandleFunc("POST /api/ai/analyze", s.analyze)
 	mux.HandleFunc("GET /api/ai/analysis/{id}", s.getAnalysis)
 	mux.HandleFunc("GET /api/reports/latest", s.report)
+	if cfg.Live != nil {
+		mux.HandleFunc("GET /api/stream", s.stream)
+		mux.HandleFunc("GET /api/stream/state", s.streamState)
+		mux.HandleFunc("POST /api/stream/control", s.streamControl)
+	}
 	if cfg.StaticDir != "" {
 		mux.Handle("GET /", spa(cfg.StaticDir))
 	}
@@ -86,6 +101,13 @@ type statusRecorder struct {
 }
 
 func (r *statusRecorder) WriteHeader(code int) { r.status = code; r.ResponseWriter.WriteHeader(code) }
+
+// Flush lets the SSE handler push events through the logging middleware.
+func (r *statusRecorder) Flush() {
+	if f, ok := r.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
 
 func (s *server) logRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +144,10 @@ func (s *server) authenticate(next http.Handler) http.Handler {
 			return
 		}
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		// EventSource cannot send headers: the stream accepts the token as a query parameter.
+		if token == "" && r.URL.Path == "/api/stream" {
+			token = r.URL.Query().Get("token")
+		}
 		user, err := s.cfg.Auth.Verify(token)
 		if err != nil {
 			writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing or invalid token")
