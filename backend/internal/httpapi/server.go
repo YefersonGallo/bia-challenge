@@ -69,6 +69,7 @@ func New(svc *app.Service, cfg Config) http.Handler {
 	mux.HandleFunc("GET /api/reports/latest", s.report)
 	if cfg.Live != nil {
 		mux.HandleFunc("GET /api/stream", s.stream)
+		mux.HandleFunc("POST /api/stream/token", s.streamToken)
 		mux.HandleFunc("GET /api/stream/state", s.streamState)
 		mux.HandleFunc("POST /api/stream/control", s.streamControl)
 	}
@@ -213,11 +214,18 @@ func (s *server) authenticate(next http.Handler) http.Handler {
 			return
 		}
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		// EventSource cannot send headers: the stream accepts the token as a query parameter.
-		if token == "" && r.URL.Path == "/api/stream" {
+		// EventSource cannot send headers: the stream takes a token in the URL, and
+		// only a short-lived stream token (POST /api/stream/token), so a URL that
+		// ends up in an access log is useless a minute later.
+		streamURL := token == "" && r.URL.Path == "/api/stream"
+		if streamURL {
 			token = r.URL.Query().Get("token")
 		}
 		user, err := s.cfg.Auth.Verify(token)
+		if err == nil && strings.HasPrefix(user, streamPrefix) != streamURL {
+			err = errBadToken // a stream token opens only the stream, and the stream only takes one
+		}
+		user = strings.TrimPrefix(user, streamPrefix)
 		if err != nil {
 			writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing or invalid token")
 			return

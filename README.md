@@ -46,7 +46,8 @@ Secuencia sobre los CSV oficiales:
 
 | Ruta | Uso |
 |---|---|
-| `GET /api/stream?token=` | Server-Sent Events. Primero `snapshot` (reloj, medidores con sus últimas 48 lecturas, alertas); luego `tick`, `alert`, `control` y `snapshot` tras un reinicio. Con `Last-Event-ID` solo se reenvía lo perdido. El token va en la URL porque `EventSource` no envía cabeceras |
+| `POST /api/stream/token` | Token del stream, válido 1 minuto y solo para `/api/stream` (el de sesión no se acepta en la URL, y este no sirve para el resto de la API) |
+| `GET /api/stream?token=&last_event_id=` | Server-Sent Events. Primero `snapshot` (reloj, medidores con sus últimas 48 lecturas, alertas); luego `tick`, `alert`, `control` y `snapshot` tras un reinicio. Con `Last-Event-ID` o `last_event_id` solo se reenvía lo perdido. El token va en la URL porque `EventSource` no envía cabeceras: por eso es de corta vida |
 | `POST /api/stream/control` `{action, speed}` | `start`, `pause`, `reset`, `speed` (0,25–32) |
 | `GET /api/stream/state` | Reloj y alertas actuales |
 
@@ -55,6 +56,8 @@ Secuencia sobre los CSV oficiales:
 **Variables**: `STREAM_STEP_MS` (500), `STREAM_START_DAY` (7), `STREAM_AUTOSTART` (`false`).
 
 **Tests**: consistencia batch vs. streaming en los dos datasets (mismos medidores, tipo y severidad; nada que el lote considere normal llega a confirmarse), M-109 confirmada ≥ 3 h después de su candidata, M-106 cerrada como falso positivo y nunca tratada como anomalía real, precarga, reanudación por `Last-Event-ID`, cliente lento, controles, SSE de punta a punta con `httptest`, y en el frontend los reducers, la página, las notificaciones y el hook con un `EventSource` simulado.
+
+**Robustez**: al apagar el servidor se cierran los streams abiertos (el reinicio no espera 10 s); los ids de evento empiezan en la hora de arranque del proceso, así que un id de una instancia anterior recibe un snapshot nuevo en vez de "reanudar"; la pausa entre horas descuenta el tiempo de análisis, así que 8× es 8×. Caddy no comprime `/api/stream` y nginx no lo bufferiza.
 
 **Límites**: las alertas en vivo están en memoria y se reinician con el servidor; en un despliegue con varias réplicas cada una tendría su propio reloj.
 

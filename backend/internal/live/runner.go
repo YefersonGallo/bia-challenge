@@ -312,15 +312,24 @@ func (r *Runner) Control(action string, speed float64) (State, bool) {
 	return st, true
 }
 
-// Loop advances the clock in real time while running, until ctx ends.
+// Close ends the open streams (used on server shutdown).
+func (r *Runner) Close() { r.hub.Close() }
+
+// Loop advances the clock in real time while running, until ctx ends. The wait
+// counts from the start of the previous tick, so the work of a tick does not
+// slow the replay down (8× means 8×).
 func (r *Runner) Loop(ctx context.Context) {
 	timer := time.NewTimer(time.Hour)
 	defer timer.Stop()
+	last := time.Now()
 	for {
 		r.mu.Lock()
 		running := r.running
-		wait := time.Duration(float64(r.opts.Step) / r.speed)
+		wait := time.Duration(float64(r.opts.Step)/r.speed) - time.Since(last)
 		r.mu.Unlock()
+		if wait < 0 {
+			wait = 0
+		}
 		if !running {
 			wait = time.Hour
 		}
@@ -336,6 +345,7 @@ func (r *Runner) Loop(ctx context.Context) {
 				}
 			}
 		case <-timer.C:
+			last = time.Now()
 			r.mu.Lock()
 			if r.running {
 				r.step()

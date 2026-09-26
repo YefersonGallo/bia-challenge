@@ -1,6 +1,10 @@
 # HTTPS in front of the web container. DOMAIN comes from .env, e.g.
 # vatio.midominio.com or, without a domain, <ip-del-servidor>.sslip.io
 {$DOMAIN} {
-	encode gzip
-	reverse_proxy web:80
+	# Compress everything except the live stream: SSE must reach the browser event by event.
+	@compressible not path /api/stream
+	encode @compressible gzip
+	reverse_proxy web:80 {
+		flush_interval -1
+	}
 }

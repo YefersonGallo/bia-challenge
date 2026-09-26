@@ -3,6 +3,7 @@ package httpapi_test
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -59,6 +60,23 @@ func liveServer(t *testing.T) (*httptest.Server, *live.Runner, string) {
 	return srv, runner, tok
 }
 
+// streamToken exchanges the session token for a short-lived stream token.
+func streamToken(t *testing.T, base, session string) string {
+	t.Helper()
+	req, _ := http.NewRequest("POST", base+"/api/stream/token", nil)
+	req.Header.Set("Authorization", "Bearer "+session)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	var body struct{ Token string }
+	if err := json.NewDecoder(res.Body).Decode(&body); err != nil || res.StatusCode != 200 {
+		t.Fatalf("stream token = %d %v", res.StatusCode, err)
+	}
+	return body.Token
+}
+
 func open(t *testing.T, url, lastID string) (*bufio.Scanner, func()) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -89,7 +107,21 @@ func TestStreamSnapshotTicksAndResume(t *testing.T) {
 		t.Fatalf("stream without token = %d", res.StatusCode)
 	}
 
-	sc, closeA := open(t, srv.URL+"/api/stream?token="+tok, "")
+	// The session token is never accepted in the URL: only a stream token.
+	if res, err := http.Get(srv.URL + "/api/stream?token=" + tok); err != nil || res.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("session token in the URL = %v %v", res.StatusCode, err)
+	} else {
+		res.Body.Close()
+	}
+	st := streamToken(t, srv.URL, tok)
+	req, _ := http.NewRequest("GET", srv.URL+"/api/meters", nil)
+	req.Header.Set("Authorization", "Bearer "+st)
+	if res, err := http.DefaultClient.Do(req); err != nil || res.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("stream token on the REST API = %v %v", res.StatusCode, err)
+	} else {
+		res.Body.Close()
+	}
+	sc, closeA := open(t, srv.URL+"/api/stream?token="+st, "")
 	first := readEvents(t, sc, 1)
 	if len(first) != 1 || first[0].event != "snapshot" || !strings.Contains(first[0].data, `"meters"`) {
 		t.Fatalf("first event = %+v", first)
@@ -104,7 +136,7 @@ func TestStreamSnapshotTicksAndResume(t *testing.T) {
 
 	// Missed while disconnected: resumes from the last id without a new snapshot.
 	runner.Step()
-	sc, closeB := open(t, srv.URL+"/api/stream?token="+tok, ticks[0].id)
+	sc, closeB := open(t, srv.URL+"/api/stream?token="+st, ticks[0].id)
 	defer closeB()
 	resumed := readEvents(t, sc, 2)
 	if len(resumed) != 2 || resumed[0].id != ticks[1].id || resumed[0].event != "tick" {

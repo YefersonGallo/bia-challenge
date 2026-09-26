@@ -126,8 +126,8 @@ class FakeEventSource {
   addEventListener(name: string, fn: (e: MessageEvent) => void) {
     ;(this.listeners[name] ??= []).push(fn)
   }
-  emit(name: string, data: unknown) {
-    for (const fn of this.listeners[name] ?? []) fn(new MessageEvent(name, { data: JSON.stringify(data) }))
+  emit(name: string, data: unknown, id = '') {
+    for (const fn of this.listeners[name] ?? []) fn(new MessageEvent(name, { data: JSON.stringify(data), lastEventId: id }))
   }
   close() {
     this.closed = true
@@ -140,25 +140,34 @@ function Harness() {
 }
 
 describe('useLiveStream', () => {
-  it('opens the stream with the token and feeds the store', () => {
+  it('opens the stream with a short-lived stream token and feeds the store', async () => {
+    const { calls } = mockApi({ 'POST /stream/token': { token: 'st 1', expires_at: '2026-09-26T10:01:00Z' } })
     vi.stubGlobal('EventSource', FakeEventSource)
     useLiveStore.setState(initialLive)
-    useAuthStore.setState({ token: 'tok 1', user: { email: 'u', name: 'U' } })
+    useAuthStore.setState({ token: 'session', user: { email: 'u', name: 'U' } })
     const { unmount } = renderWithProviders(<Harness />)
+    await waitFor(() => expect(FakeEventSource.last?.url).toBe('/api/stream?token=st+1'))
+    expect(calls[0]).toMatchObject({ method: 'POST', path: '/stream/token' })
     const es = FakeEventSource.last
-    expect(es.url).toBe('/api/stream?token=tok%201')
     act(() => {
       es.onopen?.()
-      es.emit('snapshot', snapshot)
-      es.emit('tick', { state: state(), readings: [pt('M-109', 2, 95)], status: { 'M-109': 'ALERT' } } satisfies Tick)
-      es.emit('alert', { change: 'confirmed', alert: alert({ state: 'CONFIRMED' }) } satisfies AlertChange)
+      es.emit('snapshot', snapshot, '100')
+      es.emit('tick', { state: state(), readings: [pt('M-109', 2, 95)], status: { 'M-109': 'ALERT' } } satisfies Tick, '101')
+      es.emit('alert', { change: 'confirmed', alert: alert({ state: 'CONFIRMED' }) } satisfies AlertChange, '102')
     })
     const s = useLiveStore.getState()
     expect(s.connection).toBe('open')
     expect(s.meters[0].recent.at(-1)?.consumption_kwh).toBe(95)
     expect(Object.values(s.alerts)[0].state).toBe('CONFIRMED')
+
+    // The stream drops: a new stream token and the last id seen, never the session token.
+    act(() => es.onerror?.())
+    expect(useLiveStore.getState().connection).toBe('reconnecting')
+    await waitFor(() => expect(FakeEventSource.last).not.toBe(es), { timeout: 4000 })
+    expect(FakeEventSource.last.url).toBe('/api/stream?token=st+1&last_event_id=102')
+    expect(FakeEventSource.last.url).not.toContain('session')
     unmount()
-    expect(es.closed).toBe(true)
+    expect(FakeEventSource.last.closed).toBe(true)
     vi.unstubAllGlobals()
     useAuthStore.setState({ token: null, user: null })
   })

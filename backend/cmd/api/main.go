@@ -124,6 +124,8 @@ func run(log *slog.Logger) error {
 		Logger:     log,
 	})
 	srv := &http.Server{Addr: ":" + env("PORT", "8080"), Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+	// Open SSE streams would hold Shutdown for its whole timeout: end them first.
+	srv.RegisterOnShutdown(runner.Close)
 
 	errc := make(chan error, 1)
 	go func() {
@@ -161,7 +163,9 @@ func newRunner(ctx context.Context, store app.Store, engine *analysis.Engine, lo
 	}
 	step, _ := strconv.Atoi(env("STREAM_STEP_MS", "500"))
 	day, _ := strconv.Atoi(env("STREAM_START_DAY", "7"))
-	r := live.NewRunner(engine, live.NewHub(2048), meters, readings, events, live.Options{StartDay: day, Step: time.Duration(step) * time.Millisecond})
+	// Ids start at the process start time: ids of a previous process never resume.
+	hub := live.NewHubFrom(2048, uint64(time.Now().UnixMilli())*1000)
+	r := live.NewRunner(engine, hub, meters, readings, events, live.Options{StartDay: day, Step: time.Duration(step) * time.Millisecond})
 	go r.Loop(ctx)
 	if os.Getenv("STREAM_AUTOSTART") == "true" {
 		r.Control(live.ActionStart, 0)

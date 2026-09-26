@@ -41,6 +41,17 @@ func (a Auth) sign(payload string) string {
 	return base64.RawURLEncoding.EncodeToString(m.Sum(nil))
 }
 
+// streamPrefix marks the short-lived tokens that only open the SSE stream.
+const streamPrefix = "stream|"
+
+// Issue signs a token for sub valid for ttl.
+func (a Auth) Issue(sub string, ttl time.Duration) (string, time.Time) {
+	exp := a.now().Add(ttl)
+	body, _ := json.Marshal(claims{Sub: sub, Exp: exp.Unix()})
+	payload := base64.RawURLEncoding.EncodeToString(body)
+	return payload + "." + a.sign(payload), exp
+}
+
 // Login checks the credentials and returns a token.
 func (a Auth) Login(user, password string) (string, time.Time, bool) {
 	okUser := subtle.ConstantTimeCompare([]byte(strings.ToLower(user)), []byte(strings.ToLower(a.User))) == 1

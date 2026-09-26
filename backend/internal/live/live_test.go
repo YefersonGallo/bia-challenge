@@ -209,3 +209,47 @@ func TestControlsAndLoop(t *testing.T) {
 		t.Fatalf("reset: %+v", st)
 	}
 }
+
+func TestHubCloseEndsStreamsAndOldIdsGetASnapshot(t *testing.T) {
+	h := live.NewHubFrom(8, 5_000_000)
+	for i := 0; i < 3; i++ {
+		h.Publish("tick", i)
+	}
+	if _, _, resumed, cancel := h.Subscribe(42); resumed { // an id from a previous process
+		cancel()
+		t.Fatal("an id older than the process must get a snapshot")
+	} else {
+		cancel()
+	}
+	ch, _, _, _ := h.Subscribe(0)
+	h.Close()
+	if _, ok := <-ch; ok {
+		t.Fatal("Close must end open subscriptions")
+	}
+	late, _, _, _ := h.Subscribe(0)
+	if _, ok := <-late; ok {
+		t.Fatal("a closed hub accepts no new subscriptions")
+	}
+}
+
+// The real speed follows the nominal one: the work of each tick is not added to the wait.
+func TestReplaySpeedMatchesTheNominalOne(t *testing.T) {
+	f := fixtures(t)[0]
+	r := live.NewRunner(analysis.New(analysis.DefaultConfig()), live.NewHub(0), f.meters, f.readings, f.events, live.Options{Step: 400 * time.Millisecond})
+	ctx, stop := context.WithCancel(context.Background())
+	defer stop()
+	go r.Loop(ctx)
+	r.Control(live.ActionSpeed, 4) // 100 ms per simulated hour
+	start := time.Now()
+	r.Control(live.ActionStart, 0)
+	for r.State().Hour < 8 && time.Since(start) < 5*time.Second {
+		time.Sleep(2 * time.Millisecond)
+	}
+	r.Control(live.ActionPause, 0)
+	elapsed := time.Since(start)
+	// Nominal: 8 × 100 ms = 800 ms. When the analysis time of each tick was added
+	// to the wait, the replay ran ~15–25 % slower than announced.
+	if elapsed > 950*time.Millisecond {
+		t.Fatalf("8 simulated hours took %s at 4× (nominal 800 ms)", elapsed)
+	}
+}

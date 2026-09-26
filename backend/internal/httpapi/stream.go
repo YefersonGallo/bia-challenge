@@ -82,6 +82,14 @@ func (s *server) stream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// StreamTokenTTL is how long a stream token can be used to open (or reopen) the stream.
+var StreamTokenTTL = time.Minute
+
+func (s *server) streamToken(w http.ResponseWriter, r *http.Request) {
+	tok, exp := s.cfg.Auth.Issue(streamPrefix+userOf(r), StreamTokenTTL)
+	writeJSON(w, http.StatusOK, map[string]any{"token": tok, "expires_at": exp})
+}
+
 func (s *server) streamState(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"state": s.cfg.Live.State(), "alerts": s.cfg.Live.Alerts()})
 }

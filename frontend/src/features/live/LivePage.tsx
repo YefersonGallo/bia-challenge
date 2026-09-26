@@ -80,8 +80,8 @@ function MeterGrid() {
             </span>
             <span className="truncate text-[11px] text-muted">{m.name}</span>
             <Sparkline values={m.recent.map((p) => p.consumption_kwh)} color={color} width={220} height={34} />
-            <span className="flex justify-between gap-2 font-mono text-[10px] whitespace-nowrap">
-              <span className="truncate">{last ? `${fmtNum(last.consumption_kwh, 1)} kWh/h · ${fmtNum(last.voltage_v)} V · FP ${fmtNum(last.power_factor, 2)}` : '—'}</span>
+            <span className="flex flex-wrap justify-between gap-x-2 font-mono text-[10px]">
+              <span>{last ? `${fmtNum(last.consumption_kwh, 1)} kWh/h · ${fmtNum(last.voltage_v)} V · FP ${fmtNum(last.power_factor, 2)}` : '—'}</span>
               <span style={{ color }}>{a ? `${a.state === 'CANDIDATE' ? 'CANDIDATA' : TYPE_META[a.type].short}` : 'OK'}</span>
             </span>
           </div>
