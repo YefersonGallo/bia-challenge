@@ -2,6 +2,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -37,14 +38,18 @@ func New(svc *app.Service, cfg Config) http.Handler {
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("POST /api/auth/login", s.login)
 	mux.HandleFunc("GET /api/dashboard/summary", s.summary)
+	mux.HandleFunc("GET /api/dashboard/heatmap", s.heatmap)
 	mux.HandleFunc("GET /api/meters", s.listMeters)
 	mux.HandleFunc("GET /api/meters/{meterId}", s.getMeter)
 	mux.HandleFunc("GET /api/meters/{meterId}/readings", s.getReadings)
 	mux.HandleFunc("GET /api/meters/{meterId}/events", s.getEvents)
+	mux.HandleFunc("GET /api/meters/{meterId}/baseline", s.baseline)
+	mux.HandleFunc("GET /api/meters/{meterId}/forecast", s.forecast)
 	mux.HandleFunc("GET /api/events", s.listEvents)
 	mux.HandleFunc("GET /api/anomalies", s.listAnomalies)
 	mux.HandleFunc("GET /api/anomalies/{id}", s.getAnomaly)
 	mux.HandleFunc("PATCH /api/anomalies/{id}", s.patchAnomaly)
+	mux.HandleFunc("POST /api/anomalies/{id}/actions", s.postAction)
 	mux.HandleFunc("POST /api/ai/analyze", s.analyze)
 	mux.HandleFunc("GET /api/ai/analysis/{id}", s.getAnalysis)
 	mux.HandleFunc("GET /api/reports/latest", s.report)
@@ -68,7 +73,7 @@ func (s *server) recoverer(next http.Handler) http.Handler {
 		defer func() {
 			if v := recover(); v != nil {
 				s.cfg.Logger.Error("panic", "path", r.URL.Path, "value", v)
-				writeError(w, http.StatusInternalServerError, "internal error")
+				writeError(w, http.StatusInternalServerError, "INTERNAL", "internal error")
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -117,12 +122,23 @@ func (s *server) authenticate(next http.Handler) http.Handler {
 			return
 		}
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if _, err := s.cfg.Auth.Verify(token); err != nil {
-			writeError(w, http.StatusUnauthorized, "missing or invalid token")
+		user, err := s.cfg.Auth.Verify(token)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing or invalid token")
 			return
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userKey{}, user)))
 	})
+}
+
+type userKey struct{}
+
+// userOf returns the authenticated user of the request (the token subject).
+func userOf(r *http.Request) string {
+	if u, ok := r.Context().Value(userKey{}).(string); ok && u != "" {
+		return u
+	}
+	return "unknown"
 }
 
 // --- helpers ----------------------------------------------------------------
@@ -133,20 +149,28 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-func writeError(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, map[string]string{"error": msg})
+// apiError is the body of every error response: {"error": {"code", "message"}}.
+type apiError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+func writeError(w http.ResponseWriter, status int, code, msg string) {
+	writeJSON(w, status, map[string]apiError{"error": {Code: code, Message: msg}})
 }
 
 // fail maps use-case errors to HTTP status codes.
 func (s *server) fail(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, app.ErrNotFound):
-		writeError(w, http.StatusNotFound, err.Error())
+		writeError(w, http.StatusNotFound, "NOT_FOUND", err.Error())
 	case errors.Is(err, app.ErrConflict):
-		writeError(w, http.StatusConflict, err.Error())
+		writeError(w, http.StatusConflict, "CONFLICT", err.Error())
+	case errors.Is(err, app.ErrInvalid):
+		writeError(w, http.StatusBadRequest, "INVALID", err.Error())
 	default:
 		s.cfg.Logger.Error("request failed", "err", err)
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeError(w, http.StatusInternalServerError, "INTERNAL", "internal error")
 	}
 }
 
@@ -163,12 +187,12 @@ func (s *server) health(w http.ResponseWriter, _ *http.Request) {
 func (s *server) login(w http.ResponseWriter, r *http.Request) {
 	var body struct{ Email, Password string }
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		writeError(w, http.StatusBadRequest, "INVALID", "invalid JSON body")
 		return
 	}
 	token, exp, ok := s.cfg.Auth.Login(body.Email, body.Password)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "credenciales inválidas")
+		writeError(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "credenciales inválidas")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"token": token, "expires_at": exp, "user": map[string]string{"email": s.cfg.Auth.User, "name": "Operador demo"}})
@@ -185,11 +209,13 @@ func (s *server) summary(w http.ResponseWriter, r *http.Request) {
 
 var validStatus = map[string]bool{"": true, "OK": true, "ALERT": true, "CRITICAL": true}
 var validSort = map[string]bool{"": true, "severity": true, "consumption": true, "variation": true}
+var validOrder = map[string]bool{"": true, "asc": true, "desc": true}
 
 func (s *server) listMeters(w http.ResponseWriter, r *http.Request) {
-	q := app.MeterQuery{Status: strings.ToUpper(r.URL.Query().Get("status")), Q: r.URL.Query().Get("q"), Sort: r.URL.Query().Get("sort")}
-	if !validStatus[q.Status] || !validSort[q.Sort] {
-		writeError(w, http.StatusBadRequest, "status must be OK|ALERT|CRITICAL and sort severity|consumption|variation")
+	v := r.URL.Query()
+	q := app.MeterQuery{Status: strings.ToUpper(v.Get("status")), Q: v.Get("q"), Sort: v.Get("sort"), Order: strings.ToLower(v.Get("order"))}
+	if !validStatus[q.Status] || !validSort[q.Sort] || !validOrder[q.Order] {
+		writeError(w, http.StatusBadRequest, "INVALID", "status must be OK|ALERT|CRITICAL, sort severity|consumption|variation and order asc|desc")
 		return
 	}
 	out, err := s.svc.ListMeters(r.Context(), q)
@@ -213,12 +239,27 @@ func (s *server) getMeter(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) getReadings(w http.ResponseWriter, r *http.Request) {
-	bucket := r.URL.Query().Get("bucket")
-	if bucket != "" && bucket != "hour" && bucket != "day" {
-		writeError(w, http.StatusBadRequest, "bucket must be hour or day")
+	v := r.URL.Query()
+	q := app.ReadingsQuery{Bucket: v.Get("bucket")}
+	if res := v.Get("resolution"); res != "" { // alias used by the plan: raw | hour | day
+		q.Bucket = res
+	}
+	if q.Bucket == "raw" {
+		q.Bucket = ""
+	}
+	if q.Bucket != "" && q.Bucket != "hour" && q.Bucket != "day" {
+		writeError(w, http.StatusBadRequest, "INVALID", "resolution must be raw, hour or day")
 		return
 	}
-	out, err := s.svc.Readings(r.Context(), r.PathValue("meterId"), bucket)
+	var err error
+	if q.From, err = parseTime(v.Get("from"), false); err == nil {
+		q.To, err = parseTime(v.Get("to"), true)
+	}
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID", "from and to must be RFC 3339 timestamps or YYYY-MM-DD dates")
+		return
+	}
+	out, err := s.svc.Readings(r.Context(), r.PathValue("meterId"), q)
 	if err != nil {
 		s.fail(w, err)
 		return
@@ -271,7 +312,7 @@ func (s *server) patchAnomaly(w http.ResponseWriter, r *http.Request) {
 		Status domain.AnomalyStatus `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Status == "" {
-		writeError(w, http.StatusBadRequest, "body must be {\"status\": \"ACKNOWLEDGED|IN_PROGRESS|RESOLVED\"}")
+		writeError(w, http.StatusBadRequest, "INVALID", "body must be {\"status\": \"ACKNOWLEDGED|IN_PROGRESS|RESOLVED\"}")
 		return
 	}
 	out, err := s.svc.UpdateAnomalyStatus(r.Context(), r.PathValue("id"), body.Status)
@@ -308,4 +349,63 @@ func (s *server) report(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// parseTime accepts RFC 3339 or a date; a date used as upper bound covers the whole day.
+func parseTime(v string, end bool) (*time.Time, error) {
+	if v == "" {
+		return nil, nil
+	}
+	if t, err := time.Parse(time.RFC3339, v); err == nil {
+		return &t, nil
+	}
+	t, err := time.Parse("2006-01-02", v)
+	if err != nil {
+		return nil, err
+	}
+	if end {
+		t = t.Add(24*time.Hour - time.Second)
+	}
+	return &t, nil
+}
+
+func (s *server) heatmap(w http.ResponseWriter, r *http.Request) {
+	out, err := s.svc.Heatmap(r.Context())
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (s *server) baseline(w http.ResponseWriter, r *http.Request) {
+	out, err := s.svc.Baseline(r.Context(), r.PathValue("meterId"))
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (s *server) forecast(w http.ResponseWriter, r *http.Request) {
+	out, err := s.svc.Forecast(r.Context(), r.PathValue("meterId"))
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (s *server) postAction(w http.ResponseWriter, r *http.Request) {
+	var body app.ActionInput
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Action == "" {
+		writeError(w, http.StatusBadRequest, "INVALID", `body must be {"action": "acknowledge|investigate|validate|resolve|dismiss|note", "note": "…"}`)
+		return
+	}
+	out, err := s.svc.AddAction(r.Context(), r.PathValue("id"), userOf(r), body)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, out)
 }

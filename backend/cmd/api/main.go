@@ -5,8 +5,10 @@
 //	PORT               default 8080
 //	DATABASE_URL       PostgreSQL DSN; when empty an in-memory store is used
 //	DATA_DIR           directory with readings.csv / events.csv (default ./data)
-//	ANTHROPIC_API_KEY  enables explanations written by Claude
-//	ANTHROPIC_MODEL    Claude model id (default claude-sonnet-5)
+//	ANTHROPIC_API_KEY  enables explanations written by Claude (alias: LLM_API_KEY)
+//	ANTHROPIC_MODEL    Claude model id (default claude-sonnet-5; alias: LLM_MODEL)
+//	LLM_TIMEOUT_MS     limit for one Claude call before the template is used (default 10000)
+//	TARIFF_COP_PER_KWH energy tariff for the impact estimate (default 850)
 //	AUTH_SECRET        HMAC secret for tokens (required in production)
 //	DEMO_USER / DEMO_PASSWORD  demo credentials
 //	CORS_ORIGIN        allowed origin for the SPA (default *)
@@ -69,20 +71,27 @@ func run(log *slog.Logger) error {
 
 	var explainer explain.Explainer = explain.Template{}
 	aiProvider := "template"
-	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
-		model := env("ANTHROPIC_MODEL", "claude-sonnet-5")
+	if key := env("ANTHROPIC_API_KEY", os.Getenv("LLM_API_KEY")); key != "" {
+		model := env("ANTHROPIC_MODEL", env("LLM_MODEL", "claude-sonnet-5"))
+		timeout, _ := strconv.Atoi(env("LLM_TIMEOUT_MS", "10000"))
 		aiProvider = "claude:" + model
+		// Only Claude's answers are cached: a failed call is retried on the next run.
 		explainer = explain.WithFallback{
-			Primary: explain.NewClaude(key, model), Fallback: explain.Template{},
+			Primary: &explain.Cached{Next: explain.NewClaude(key, model)}, Fallback: explain.Template{},
+			Timeout:    time.Duration(timeout) * time.Millisecond,
 			OnFallback: func(meter string, err error) { log.Warn("claude fallback to template", "meter", meter, "err", err) },
 		}
-		log.Info("explanations by Claude enabled", "model", model)
+		log.Info("explanations by Claude enabled", "model", model, "timeout_ms", timeout)
 	} else {
 		log.Info("ANTHROPIC_API_KEY not set: using template explanations")
 	}
 
+	cfg := analysis.DefaultConfig()
+	if v, err := strconv.ParseFloat(os.Getenv("TARIFF_COP_PER_KWH"), 64); err == nil && v > 0 {
+		cfg.TariffCOPPerKWh = v
+	}
 	delay, _ := strconv.Atoi(env("STEP_DELAY_MS", "450"))
-	svc := app.New(store, analysis.New(analysis.DefaultConfig()), explainer, app.Options{StepDelay: time.Duration(delay) * time.Millisecond, Logger: log})
+	svc := app.New(store, analysis.New(cfg), explainer, app.Options{StepDelay: time.Duration(delay) * time.Millisecond, Logger: log})
 
 	secret := os.Getenv("AUTH_SECRET")
 	if secret == "" {

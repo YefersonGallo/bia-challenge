@@ -88,7 +88,7 @@ func Validate(e Explanation, ev domain.Evidence) error {
 		return fmt.Errorf("empty reason or action")
 	}
 	allowed := allowedNumbers(ev)
-	texts := append([]string{e.Reason, e.RecommendedAction}, e.NextSteps...)
+	texts := append([]string{e.Reason, e.RecommendedAction, e.EvidenceSummary}, e.NextSteps...)
 	for _, t := range texts {
 		for _, m := range numberRe.FindAllString(t, -1) {
 			v, ok := parseNumber(m)

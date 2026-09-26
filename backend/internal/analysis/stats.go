@@ -72,3 +72,16 @@ func round(v float64, n int) float64 {
 	p := math.Pow(10, float64(n))
 	return math.Round(v*p) / p
 }
+
+// percentile returns the p-quantile (0..1) of xs with linear interpolation.
+func percentile(xs []float64, p float64) float64 {
+	if len(xs) == 0 {
+		return 0
+	}
+	c := append([]float64(nil), xs...)
+	sort.Float64s(c)
+	pos := p * float64(len(c)-1)
+	lo := int(math.Floor(pos))
+	hi := int(math.Ceil(pos))
+	return c[lo] + (c[hi]-c[lo])*(pos-float64(lo))
+}

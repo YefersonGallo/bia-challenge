@@ -253,3 +253,105 @@ func TestEmptyMeter(t *testing.T) {
 		t.Errorf("empty meter status = %s", s.Status)
 	}
 }
+
+func challenge(t *testing.T) fixture {
+	t.Helper()
+	fs := fixtures(t)
+	if len(fs) < 2 {
+		t.Skip("challenge data not present")
+	}
+	return fs[1]
+}
+
+// M-112 must be found from the readings alone: removing every event changes nothing.
+func TestM112DetectedWithoutEvents(t *testing.T) {
+	for _, fx := range fixtures(t) {
+		t.Run(fx.name, func(t *testing.T) {
+			in := fx.input
+			in.Events = nil
+			f := findingFor(analysis.New(analysis.DefaultConfig()).Analyze(in, nil), "M-112")
+			if f == nil || f.Anomaly.Type != domain.DataQuality || f.Anomaly.Severity != domain.SeverityHigh {
+				t.Fatalf("M-112 without events = %+v", f)
+			}
+		})
+	}
+}
+
+func TestChallengeChangePointsAndFlags(t *testing.T) {
+	res := analyze(challenge(t))
+	want := map[string]string{"M-109": "2026-09-12T14:00", "M-104": "2026-09-11T00:00", "M-106": "2026-09-08T00:00"}
+	for id, at := range want {
+		f := findingFor(res, id)
+		if f.Anomaly.ChangePointAt == nil || f.Anomaly.ChangePointAt.Format("2006-01-02T15:04") != at {
+			t.Errorf("%s change point = %v, want %s", id, f.Anomaly.ChangePointAt, at)
+		}
+	}
+	if f := findingFor(res, "M-106"); f.Anomaly.EndedAt == nil || f.Anomaly.EndedAt.Format("15:04") != "12:00" {
+		t.Errorf("M-106 should end at 12:00, got %v", f.Anomaly.EndedAt)
+	}
+	s := res.Stats["M-112"]
+	flags := map[string]bool{}
+	for _, fr := range s.Flagged {
+		for _, fl := range fr.Flags {
+			flags[fl] = true
+		}
+	}
+	for _, fl := range []string{analysis.FlagVoltage, analysis.FlagJump, analysis.FlagPF} {
+		if !flags[fl] {
+			t.Errorf("M-112 missing flag %s", fl)
+		}
+	}
+	if s.MaxFlagShare24h <= 0.10 {
+		t.Errorf("M-112 flag share = %.2f, want > 0,10", s.MaxFlagShare24h)
+	}
+	for _, id := range []string{"M-101", "M-104", "M-106", "M-109"} {
+		if n := len(res.Stats[id].Flagged); n > 2 {
+			t.Errorf("%s has %d flagged readings, want ≤ 2", id, n)
+		}
+	}
+}
+
+func TestConfidenceBreakdownAndImpact(t *testing.T) {
+	res := analyze(challenge(t))
+	for _, f := range res.Findings {
+		total := 0.0
+		for _, c := range f.Anomaly.ConfidenceBreakdown {
+			total += c.Weight
+			if c.Score < 0 || c.Score > 1 {
+				t.Errorf("%s %s score %.2f out of [0,1]", f.Anomaly.MeterID, c.Key, c.Score)
+			}
+		}
+		if total < 0.999 || total > 1.001 {
+			t.Errorf("%s weights sum %.3f", f.Anomaly.MeterID, total)
+		}
+	}
+	im := findingFor(res, "M-109").Anomaly.Impact
+	if im.ExtraKWhPerDay < 1100 || im.ExtraKWhPerDay > 1200 {
+		t.Errorf("M-109 extra kWh/day = %.0f, want ≈ 1.150", im.ExtraKWhPerDay)
+	}
+	if im.ExtraKWhPerMonth < 33000 || im.ExtraKWhPerMonth > 36000 {
+		t.Errorf("M-109 extra kWh/month = %.0f, want ≈ 34.000", im.ExtraKWhPerMonth)
+	}
+	if im.ReactiveRatio < 0.85 || im.ReactiveRatio > 0.95 {
+		t.Errorf("M-109 reactive ratio = %.2f, want ≈ 0,91", im.ReactiveRatio)
+	}
+	if fp := findingFor(res, "M-106").Anomaly.Impact; fp.Normalized > 0.1 {
+		t.Errorf("M-106 impact should be negligible, got %.2f", fp.Normalized)
+	}
+}
+
+// An outage whose stated duration does not match the observed one does not explain it.
+func TestOutageDurationMustMatch(t *testing.T) {
+	fx := challenge(t)
+	in := fx.input
+	in.Events = append([]domain.Event(nil), fx.input.Events...)
+	for i, e := range in.Events {
+		if e.MeterID == "M-106" {
+			in.Events[i].Description = "Scheduled maintenance outage for 48 hours"
+		}
+	}
+	f := findingFor(analysis.New(analysis.DefaultConfig()).Analyze(in, nil), "M-106")
+	if f.Anomaly.Evidence.EventExplainsShift {
+		t.Fatal("a 48 h outage must not explain a 12 h drop")
+	}
+}

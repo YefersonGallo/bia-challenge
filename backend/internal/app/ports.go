@@ -13,6 +13,9 @@ import (
 // ErrNotFound is returned by repositories when an entity does not exist.
 var ErrNotFound = errors.New("not found")
 
+// ErrInvalid means the request itself is not valid (bad parameters).
+var ErrInvalid = errors.New("invalid request")
+
 // ErrConflict signals an operation that is not valid in the current state.
 var ErrConflict = errors.New("conflict")
 
@@ -43,6 +46,12 @@ type AnomalyRepository interface {
 	UpdateAnomalyStatus(ctx context.Context, id string, status domain.AnomalyStatus) error
 }
 
+// ActionRepository keeps the operator actions recorded on anomalies.
+type ActionRepository interface {
+	AddAction(ctx context.Context, a domain.AnomalyAction) error
+	Actions(ctx context.Context, anomalyID string) ([]domain.AnomalyAction, error)
+}
+
 // Seeder loads the initial dataset.
 type Seeder interface {
 	Empty(ctx context.Context) (bool, error)
@@ -55,5 +64,6 @@ type Store interface {
 	EventRepository
 	RunRepository
 	AnomalyRepository
+	ActionRepository
 	Seeder
 }

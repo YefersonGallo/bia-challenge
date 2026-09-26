@@ -27,17 +27,23 @@ type Config struct {
 	CriticalPct      float64       // variation that marks a meter as CRITICAL
 	HighPct          float64       // shift above which a real anomaly is HIGH
 	ZThreshold       float64       // robust z-score for spikes
-	EventWindow      time.Duration // how close an event must be to the onset
+	EventWindow      time.Duration // how close an event must be to the change point
+	DurationTol      float64       // hours of tolerance between an outage's stated and observed duration
 	CoherenceTol     float64       // relative tolerance of kWh / (V·I·PF) against the meter's own ratio
-	VoltageTol       float64       // voltage deviation from the meter's baseline considered implausible
-	PFJump           float64       // power-factor jump against its neighbours considered implausible
-	LocalWindow      int           // readings (centered) used as local reference for jumps
-	MinInvalid       int           // suspicious readings that trigger DATA_QUALITY
-	MinCoherence     float64       // physical coherence below which data is suspect
-	PFDropThreshold  float64       // power-factor drop considered anomalous
-	RelationShift    float64       // change of kWh / (V·I·PF) considered an anomalous electrical relation
-	NightRatioSignal float64       // night consumption ratio worth reporting
-	PersistenceHours float64       // hours after which persistence saturates in the priority score
+	VoltageMin       float64       // plausible voltage band (V)
+	VoltageMax       float64
+	VoltageJump      float64 // voltage step between consecutive hours considered implausible (V)
+	PFJump           float64 // power-factor jump against its neighbours considered implausible
+	LocalWindow      int     // readings (centered) used as local reference for jumps
+	MinInvalid       int     // suspicious readings that trigger DATA_QUALITY
+	MinCoherence     float64 // physical coherence below which data is suspect
+	PFDropThreshold  float64 // power-factor drop considered anomalous
+	RelationShift    float64 // change of kWh / (V·I·PF) considered an anomalous electrical relation
+	NightRatioSignal float64 // night consumption ratio worth reporting
+	PersistenceHours float64 // hours after which persistence saturates in the confidence
+	DQHighShare      float64 // share of flagged readings in 24 h that makes data quality HIGH
+	TariffCOPPerKWh  float64 // energy tariff used for the impact (COP per kWh)
+	ReactiveLimit    float64 // kVArh/kWh above which reactive energy is billed (0.5)
 }
 
 // DefaultConfig returns the thresholds documented in the README.
@@ -50,9 +56,12 @@ func DefaultConfig() Config {
 		CriticalPct:      100,
 		HighPct:          50,
 		ZThreshold:       3.5,
-		EventWindow:      24 * time.Hour,
+		EventWindow:      3 * time.Hour,
+		DurationTol:      2,
 		CoherenceTol:     0.25,
-		VoltageTol:       0.06,
+		VoltageMin:       209,
+		VoltageMax:       231,
+		VoltageJump:      15,
 		PFJump:           0.15,
 		LocalWindow:      7,
 		MinInvalid:       5,
@@ -60,7 +69,10 @@ func DefaultConfig() Config {
 		PFDropThreshold:  0.05,
 		RelationShift:    0.15,
 		NightRatioSignal: 1.5,
-		PersistenceHours: 48,
+		PersistenceHours: 24,
+		DQHighShare:      0.10,
+		TariffCOPPerKWh:  850,
+		ReactiveLimit:    0.5,
 	}
 }
 
@@ -128,9 +140,35 @@ type MeterStats struct {
 	Spikes           int                `json:"spikes"`
 	Episode          *Episode           `json:"episode,omitempty"`
 	RelationShiftPct float64            `json:"relation_shift_pct"`
+	VoltageJumps     int                `json:"voltage_jumps"`
+	Flagged          []FlaggedReading   `json:"flagged_readings"`
+	MaxFlagShare24h  float64            `json:"max_flag_share_24h"`
+	KFactor          float64            `json:"k_factor"` // median kWh / (V·I·PF/1000) of the baseline window
+	KMAD             float64            `json:"k_mad"`
+	HourlyP10        [24]float64        `json:"hourly_p10"`
+	HourlyP90        [24]float64        `json:"hourly_p90"`
+	LevelFactor      float64            `json:"level_factor"` // real / expected since a persistent change (1 = none)
+	ExtraKWhSoFar    float64            `json:"extra_kwh_so_far"`
+	EpisodeZ         float64            `json:"episode_z"`
+	VariableZ        map[string]float64 `json:"variable_z"`
 	Base             Electrical         `json:"base_electrical"`
 	Cur              Electrical         `json:"current_electrical"`
 }
+
+// FlaggedReading is a reading that failed a plausibility rule.
+type FlaggedReading struct {
+	Timestamp time.Time `json:"timestamp"`
+	Flags     []string  `json:"flags"`
+}
+
+// Data-quality flags stored per reading.
+const (
+	FlagRange   = "DQ_RANGE"   // PF outside [0,1] or 0 V with consumption
+	FlagVoltage = "DQ_VOLTAGE" // voltage outside the plausible band
+	FlagJump    = "DQ_JUMP"    // voltage step between consecutive hours
+	FlagPF      = "DQ_PF_JUMP" // power factor jumps against its neighbours
+	FlagPhysics = "DQ_PHYSICS" // kWh does not match V·I·PF (own and local relation)
+)
 
 // Electrical summarizes mean electrical values of a window.
 type Electrical struct {
@@ -316,8 +354,10 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 	checked, coherent := 0, 0
 	first, last := -1, -1
 	vr, pr := [2]float64{math.Inf(1), math.Inf(-1)}, [2]float64{math.Inf(1), math.Inf(-1)}
+	_ = baseVolt
 	for i, r := range rs {
-		vAnom := !hard[i] && baseVolt > 0 && math.Abs(r.VoltageV/baseVolt-1) > c.VoltageTol
+		vAnom := !hard[i] && (r.VoltageV < c.VoltageMin || r.VoltageV > c.VoltageMax)
+		vJump := i > 0 && !hard[i] && !hard[i-1] && math.Abs(r.VoltageV-rs[i-1].VoltageV) > c.VoltageJump
 		pfJ := !hard[i] && !math.IsNaN(localPF[i]) && math.Abs(r.PowerFactor-localPF[i]) > c.PFJump
 		incoh := false
 		if !math.IsNaN(ratio[i]) && baseRatio > 0 {
@@ -332,14 +372,27 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 		if vAnom {
 			s.VoltageAnomalies++
 		}
+		if vJump {
+			s.VoltageJumps++
+		}
 		if pfJ {
 			s.PFJumps++
 		}
 		if incoh {
 			s.Incoherent++
 		}
-		sus[i] = hard[i] || vAnom || pfJ || incoh
+		sus[i] = hard[i] || vAnom || vJump || pfJ || incoh
 		if sus[i] {
+			var flags []string
+			for _, f := range []struct {
+				on   bool
+				name string
+			}{{hard[i], FlagRange}, {vAnom, FlagVoltage}, {vJump, FlagJump}, {pfJ, FlagPF}, {incoh, FlagPhysics}} {
+				if f.on {
+					flags = append(flags, f.name)
+				}
+			}
+			s.Flagged = append(s.Flagged, FlaggedReading{Timestamp: r.Timestamp, Flags: flags})
 			s.InvalidReadings++
 			if first < 0 {
 				first = i
@@ -352,6 +405,22 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 	if checked > 0 {
 		s.Coherence = round(float64(coherent)/float64(checked), 3)
 	}
+	s.KFactor = round(baseRatio, 4)
+	s.KMAD = round(mad(baseRatios, baseRatio), 4)
+	// Worst 24 h window: share of flagged readings (decides DATA_QUALITY severity).
+	for i := range rs {
+		k, tot := 0, 0
+		for j := i; j < n && rs[j].Timestamp.Sub(rs[i].Timestamp) < 24*time.Hour; j++ {
+			tot++
+			if sus[j] {
+				k++
+			}
+		}
+		if tot > 0 {
+			s.MaxFlagShare24h = math.Max(s.MaxFlagShare24h, float64(k)/float64(tot))
+		}
+	}
+	s.MaxFlagShare24h = round(s.MaxFlagShare24h, 3)
 	if first >= 0 {
 		// The issue starts where suspicious readings cluster (≥ 3 in 24 h), so an
 		// isolated noisy reading does not move the onset.
@@ -391,6 +460,8 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 		medians[h] = median(perHourBase[h])
 		mads[h] = mad(perHourBase[h], medians[h])
 		s.HourlyBaseline[h] = round(medians[h], 3)
+		s.HourlyP10[h] = round(percentile(perHourBase[h], 0.10), 3)
+		s.HourlyP90[h] = round(percentile(perHourBase[h], 0.90), 3)
 		expectedDay += medians[h]
 	}
 	floor := 0.1 * expectedDay / 24
@@ -497,6 +568,39 @@ func (e *Engine) ComputeStats(rs []domain.Reading) MeterStats {
 	s.Cur = Electrical{KWhPerDay: round(mean(ck)*24, 2), VoltageV: round(mean(cv), 1), CurrentA: round(mean(ci), 2), PowerFactor: round(mean(cpf), 3)}
 	if baseRatio > 0 && len(cr) > 0 {
 		s.RelationShiftPct = round(pctChange(baseRatio, median(cr)), 1)
+	}
+
+	// Level, energy and robust z of the change (feed projection, impact and confidence).
+	s.LevelFactor = 1
+	s.VariableZ = map[string]float64{}
+	if ep := s.Episode; ep != nil {
+		var ratios, zs []float64
+		for i, r := range rs {
+			if sus[i] || !inWindow(i) {
+				continue
+			}
+			h := r.Timestamp.Hour()
+			ratios = append(ratios, r.ConsumptionKWh/expectedAt(h))
+			zs = append(zs, robustZ(r.ConsumptionKWh, medians[h], mads[h]))
+			s.ExtraKWhSoFar += r.ConsumptionKWh - expectedAt(h)
+		}
+		if !ep.Recovered && len(ratios) > 0 {
+			s.LevelFactor = round(median(ratios), 3)
+		}
+		s.ExtraKWhSoFar = round(s.ExtraKWhSoFar, 1)
+		kz := median(zs)
+		s.EpisodeZ = round(math.Abs(kz), 2)
+		s.VariableZ["kwh"] = round(kz, 2)
+		zOf := func(base, cur []float64) float64 {
+			if len(base) == 0 || len(cur) == 0 {
+				return 0
+			}
+			m := median(base)
+			return round(robustZ(median(cur), m, mad(base, m)), 2)
+		}
+		s.VariableZ["current"] = zOf(bi, ci)
+		s.VariableZ["voltage"] = zOf(bv, cv)
+		s.VariableZ["power_factor"] = zOf(bpf, cpf)
 	}
 
 	// --- 7. spikes: isolated hours far from their hour-of-day baseline ----------
@@ -627,7 +731,20 @@ func (e *Engine) Classify(m domain.Meter, s MeterStats, events []domain.Event) *
 	}
 
 	a.Evidence = ev
-	a.Confidence = e.confidence(a, s)
+	a.ConfidenceBreakdown = e.confidenceBreakdown(a, s)
+	a.Confidence = confidenceOf(a.ConfidenceBreakdown)
+	a.Impact = e.impact(a, s)
+	if ep := s.Episode; ep != nil && a.Type != domain.DataQuality {
+		t := ep.Onset
+		a.ChangePointAt = &t
+		if ep.Recovered {
+			end := ep.End.Add(time.Hour)
+			a.EndedAt = &end
+		}
+	} else if s.IssueOnset != nil {
+		t := *s.IssueOnset
+		a.ChangePointAt = &t
+	}
 	return &Finding{Anomaly: a, Stats: s}
 }
 
@@ -643,7 +760,7 @@ func meterEvents(id string, events []domain.Event) []domain.Event {
 
 func (e *Engine) classifyDataQuality(a *domain.Anomaly, ev *domain.Evidence, s MeterStats, events []domain.Event) {
 	a.Type, a.Severity = domain.DataQuality, domain.SeverityMedium
-	if s.InvalidReadings >= 10 || s.VoltageAnomalies >= 3 || s.Coherence < e.cfg.MinCoherence {
+	if s.MaxFlagShare24h > e.cfg.DQHighShare || s.Coherence < e.cfg.MinCoherence {
 		a.Severity = domain.SeverityHigh
 	}
 	if s.IssueOnset != nil {
@@ -653,13 +770,16 @@ func (e *Engine) classifyDataQuality(a *domain.Anomaly, ev *domain.Evidence, s M
 	}
 	ev.PersistentHours = s.IssueHours
 	if s.VoltageAnomalies > 0 {
-		ev.Signals = append(ev.Signals, sig("VOLTAGE_JUMPS", fmt.Sprintf("%d lecturas con voltaje fuera de ±%s del habitual (%s–%s V)", s.VoltageAnomalies, fmtPctPlain(e.cfg.VoltageTol*100), fmtNum(s.VoltageRange[0], 0), fmtNum(s.VoltageRange[1], 0)), float64(s.VoltageAnomalies)))
+		ev.Signals = append(ev.Signals, sig("VOLTAGE_JUMPS", fmt.Sprintf("%d lecturas con voltaje fuera de %s–%s V (%s–%s V)", s.VoltageAnomalies, fmtNum(e.cfg.VoltageMin, 0), fmtNum(e.cfg.VoltageMax, 0), fmtNum(s.VoltageRange[0], 0), fmtNum(s.VoltageRange[1], 0)), float64(s.VoltageAnomalies)))
+	}
+	if s.VoltageJumps > 0 {
+		ev.Signals = append(ev.Signals, sig("VOLTAGE_STEPS", fmt.Sprintf("%d saltos de voltaje de más de %s V entre horas seguidas", s.VoltageJumps, fmtNum(e.cfg.VoltageJump, 0)), float64(s.VoltageJumps)))
 	}
 	if s.PFJumps > 0 {
 		ev.Signals = append(ev.Signals, sig("PF_JUMPS", fmt.Sprintf("%d saltos bruscos del factor de potencia (%s–%s)", s.PFJumps, fmtNum(s.PFRange[0], 2), fmtNum(s.PFRange[1], 2)), float64(s.PFJumps)))
 	}
 	if s.Incoherent > 0 {
-		ev.Signals = append(ev.Signals, sig("INCOHERENT_READINGS", fmt.Sprintf("%d lecturas donde el consumo no cuadra con V·I·PF", s.Incoherent), float64(s.Incoherent)))
+		ev.Signals = append(ev.Signals, sig("INCOHERENT_READINGS", fmt.Sprintf("%d lecturas donde el consumo no cuadra con V·I·PF (k habitual %s)", s.Incoherent, fmtNum(s.KFactor, 2)), float64(s.Incoherent)))
 	}
 	if s.PFOutOfRange > 0 {
 		ev.Signals = append(ev.Signals, sig("PF_OUT_OF_RANGE", fmt.Sprintf("%d lecturas con factor de potencia fuera de [0, 1]", s.PFOutOfRange), float64(s.PFOutOfRange)))
@@ -670,10 +790,12 @@ func (e *Engine) classifyDataQuality(a *domain.Anomaly, ev *domain.Evidence, s M
 	if math.Abs(s.VariationPct) < e.cfg.ShiftThreshold*100 && s.Episode == nil {
 		ev.Signals = append(ev.Signals, sig("STABLE_CONSUMPTION", fmt.Sprintf("Consumo estable (%s): no es un cambio de carga", fmtPct(s.VariationPct)), s.VariationPct))
 	}
+	ev.Signals = append(ev.Signals, sig("FLAG_SHARE", fmt.Sprintf("Hasta %s de las lecturas de 24 h marcadas como inconsistentes", fmtPctPlain(s.MaxFlagShare24h*100)), round(s.MaxFlagShare24h*100, 1)))
+	// Events only corroborate: the verdict above never depends on them.
 	for _, x := range events {
-		if x.Kind() == domain.EventDataQuality {
+		if x.Category() == domain.EventInformational {
 			ev.RelatedEvents = append(ev.RelatedEvents, x)
-			ev.Signals = append(ev.Signals, sig("DQ_EVENT", fmt.Sprintf("Registro operativo: «%s» (%s)", x.Description, x.Timestamp.Format("02/01 15:04")), 1))
+			ev.Signals = append(ev.Signals, sig("DQ_EVENT", fmt.Sprintf("Registro operativo que lo corrobora: «%s» (%s)", x.Description, x.Timestamp.Format("02/01 15:04")), 1))
 		}
 	}
 }
@@ -694,7 +816,7 @@ func (e *Engine) classifyEpisode(a *domain.Anomaly, ev *domain.Evidence, s Meter
 	onset := ep.Onset
 	ev.Onset = &onset
 	ev.OnsetDay, ev.EndDay, ev.PersistentHours, ev.ShiftPct = ep.OnsetDay, ep.EndDay, ep.Hours, ep.MeanDevPct
-	related, coherent := e.matchEvents(a.MeterID, ep, events)
+	related, coherent, why := e.matchEvents(a.MeterID, ep, events)
 	ev.RelatedEvents = related
 	verb := "por encima"
 	if ep.Direction < 0 {
@@ -706,9 +828,9 @@ func (e *Engine) classifyEpisode(a *domain.Anomaly, ev *domain.Evidence, s Meter
 	if coherent != nil {
 		ev.EventExplainsShift = true
 		ev.Signals = append(ev.Signals, sig("EVENT_COHERENT", fmt.Sprintf("Evento coherente con el cambio: «%s» (%s)", coherent.Description, coherent.Timestamp.Format("02/01 15:04")), 1))
-		if coherent.Kind() == domain.EventShutdown && ep.Recovered {
+		if ep.Recovered {
 			a.Type, a.Severity = domain.FalsePositive, domain.SeverityLow
-			ev.Signals = append(ev.Signals, sig("RECOVERED", fmt.Sprintf("El consumo volvió a su nivel al terminar el evento (%s)", ep.End.Add(time.Hour).Format("02/01 15:04")), float64(ep.Hours)))
+			ev.Signals = append(ev.Signals, sig("RECOVERED", fmt.Sprintf("El consumo volvió a su nivel al terminar el evento (%s), tras %d h", ep.End.Add(time.Hour).Format("02/01 15:04"), ep.Hours), float64(ep.Hours)))
 		} else {
 			a.Type, a.Severity = domain.ExplainableAnomaly, domain.SeverityMedium
 		}
@@ -719,16 +841,16 @@ func (e *Engine) classifyEpisode(a *domain.Anomaly, ev *domain.Evidence, s Meter
 	}
 
 	a.Type, a.Severity = domain.RealAnomaly, domain.SeverityMedium
-	if math.Abs(ep.MeanDevPct) >= e.cfg.HighPct || elec {
+	iChg := pctChange(s.Base.CurrentA, s.Cur.CurrentA)
+	if math.Abs(ep.MeanDevPct) >= e.cfg.HighPct || ep.Hours > 12 || elec || s.Cur.PowerFactor < 0.85 || iChg > 50 {
 		a.Severity = domain.SeverityHigh
 	}
 	if len(related) > 0 {
-		x := related[0]
-		ev.Signals = append(ev.Signals, sig("NO_EVENT", fmt.Sprintf("El registro de ±%d h no explica el cambio: «%s» (%s)", int(e.cfg.EventWindow.Hours()), x.Description, x.Type), 0))
+		ev.Signals = append(ev.Signals, sig("NO_EVENT", fmt.Sprintf("Ningún evento explica el cambio: %s", why), 0))
 	} else {
 		ev.Signals = append(ev.Signals, sig("NO_EVENT", fmt.Sprintf("Ningún evento operativo en ±%d h del inicio del cambio", int(e.cfg.EventWindow.Hours())), 0))
 	}
-	if iChg := pctChange(s.Base.CurrentA, s.Cur.CurrentA); math.Abs(iChg) > 25 {
+	if math.Abs(iChg) > 25 {
 		ev.Signals = append(ev.Signals, sig("CURRENT_RISE", fmt.Sprintf("Corriente media de %s a %s A (%s)", fmtNum(s.Base.CurrentA, 0), fmtNum(s.Cur.CurrentA, 0), fmtPct(iChg)), round(iChg, 1)))
 	}
 	if pfDrop := s.Base.PowerFactor - s.Cur.PowerFactor; pfDrop >= e.cfg.PFDropThreshold {
@@ -745,11 +867,16 @@ func (e *Engine) classifyEpisode(a *domain.Anomaly, ev *domain.Evidence, s Meter
 	}
 }
 
-// matchEvents returns events near the onset and the first one whose effect
-// is coherent with the direction of the change.
-func (e *Engine) matchEvents(meterID string, ep *Episode, events []domain.Event) ([]domain.Event, *domain.Event) {
+// matchEvents evaluates the meter's events against the change. An event
+// explains it only if it is EXPLANATORY, sits within ±EventWindow of the change
+// point, its expected effect matches the direction and, for outages that state
+// a duration, the observed duration matches within DurationTol. It returns the
+// events it evaluated, the one that explains (if any) and why the rest do not.
+func (e *Engine) matchEvents(meterID string, ep *Episode, events []domain.Event) ([]domain.Event, *domain.Event, string) {
 	var related []domain.Event
 	var coherent *domain.Event
+	var reasons []string
+	window := e.cfg.EventWindow
 	for _, ev := range events {
 		if ev.MeterID != meterID {
 			continue
@@ -758,18 +885,43 @@ func (e *Engine) matchEvents(meterID string, ep *Episode, events []domain.Event)
 		if diff < 0 {
 			diff = -diff
 		}
-		if diff > e.cfg.EventWindow {
+		// Events far from the change are not related; UNKNOWN records near it are
+		// kept as evidence that nothing operational was reported.
+		if diff > window && diff > 24*time.Hour {
 			continue
 		}
 		related = append(related, ev)
-		k := ev.Kind()
-		ok := (ep.Direction > 0 && k == domain.EventLoadIncrease) || (ep.Direction < 0 && (k == domain.EventShutdown || k == domain.EventLoadDecrease))
-		if ok && coherent == nil {
-			c := ev
-			coherent = &c
+		dir := domain.EffectUp
+		if ep.Direction < 0 {
+			dir = domain.EffectDown
+		}
+		switch {
+		case ev.Category() != domain.EventExplanatory:
+			reasons = append(reasons, fmt.Sprintf("«%s» (%s) no describe una causa operativa", ev.Description, ev.Type))
+		case diff > window:
+			reasons = append(reasons, fmt.Sprintf("«%s» ocurre a %s h del cambio", ev.Description, fmtNum(diff.Hours(), 0)))
+		case ev.ExpectedEffect() != dir:
+			reasons = append(reasons, fmt.Sprintf("«%s» va en la dirección contraria", ev.Description))
+		case ev.Kind() == domain.EventShutdown && ev.DurationHours() > 0 && math.Abs(ev.DurationHours()-float64(ep.Hours)) > e.cfg.DurationTol:
+			reasons = append(reasons, fmt.Sprintf("«%s» dura %s h y el cambio %d h", ev.Description, fmtNum(ev.DurationHours(), 0), ep.Hours))
+		default:
+			if coherent == nil {
+				c := ev
+				coherent = &c
+			}
 		}
 	}
-	return related, coherent
+	return related, coherent, joinReasons(reasons)
+}
+
+func joinReasons(rs []string) string {
+	switch len(rs) {
+	case 0:
+		return ""
+	case 1:
+		return rs[0]
+	}
+	return fmt.Sprintf("%s; %s", rs[0], joinReasons(rs[1:]))
 }
 
 func (e *Engine) variables(s MeterStats) []domain.VariableChange {
@@ -784,42 +936,139 @@ func (e *Engine) variables(s MeterStats) []domain.VariableChange {
 	}
 }
 
-// confidence combines the number of corroborating signals with the strength
-// of the main one. It is bounded to [0.5, 0.97]: the engine never claims certainty.
-func (e *Engine) confidence(a domain.Anomaly, s MeterStats) float64 {
-	n := float64(len(a.Evidence.Signals))
-	var strength float64
-	switch a.Type {
-	case domain.RealAnomaly:
-		strength = clamp(math.Abs(a.Evidence.ShiftPct)/100, 0, 1)
-	case domain.DataQuality:
-		strength = clamp(float64(s.InvalidReadings)/20+(1-s.Coherence)*2, 0, 1)
-	case domain.ExplainableAnomaly:
-		strength = 0.8
-	case domain.FalsePositive:
-		strength = 0.3
+// confidenceBreakdown computes the four weighted components of the plan:
+// magnitude 0.35 · persistence 0.25 · agreeing variables 0.25 · event coherence 0.15.
+func (e *Engine) confidenceBreakdown(a domain.Anomaly, s MeterStats) []domain.ConfidenceComponent {
+	ev := a.Evidence
+	var mag, pers, vars, evt float64
+	var magD, varsD, evtD string
+	agree := func(conds ...bool) float64 {
+		n := 0
+		for _, c := range conds {
+			if c {
+				n++
+			}
+		}
+		return float64(n) / float64(len(conds))
 	}
-	return round(clamp(0.5+0.07*n+0.2*strength, 0.5, 0.97), 2)
+	z := s.VariableZ
+	switch a.Type {
+	case domain.DataQuality:
+		mag = clamp(s.MaxFlagShare24h/0.3, 0, 1)
+		magD = fmt.Sprintf("%s de lecturas marcadas en 24 h", fmtPctPlain(s.MaxFlagShare24h*100))
+		pers = clamp(float64(s.IssueHours)/e.cfg.PersistenceHours, 0, 1)
+		vars = agree(s.VoltageAnomalies+s.VoltageJumps > 0, s.PFJumps > 0, s.Incoherent > 0, math.Abs(s.VariationPct) < e.cfg.ShiftThreshold*100)
+		varsD = "voltaje, FP, relación V·I·PF y consumo estable"
+		evt, evtD = 0.5, "sin registro que lo corrobore"
+		for _, x := range ev.RelatedEvents {
+			if x.Category() == domain.EventInformational {
+				evt, evtD = 1, "un registro de calidad de datos lo corrobora"
+			}
+		}
+	default:
+		mag = clamp(s.EpisodeZ/10, 0, 1)
+		magD = fmt.Sprintf("|z| robusto %s", fmtNum(s.EpisodeZ, 1))
+		pers = clamp(float64(ev.PersistentHours)/e.cfg.PersistenceHours, 0, 1)
+		up := s.Episode != nil && s.Episode.Direction > 0
+		switch a.Type {
+		case domain.RealAnomaly:
+			vars = agree(z["kwh"] > 3, z["current"] > 3, z["power_factor"] < -3)
+			varsD = "consumo ↑, corriente ↑, FP ↓"
+		case domain.ExplainableAnomaly:
+			vars = agree(sign(z["kwh"]) == dir(up) && math.Abs(z["kwh"]) > 3, sign(z["current"]) == dir(up) && math.Abs(z["current"]) > 3)
+			varsD = "consumo y corriente en la dirección del evento"
+		default:
+			vars = agree(z["kwh"] < -3, z["current"] < -3)
+			varsD = "consumo ↓ y corriente ↓ durante el evento"
+		}
+		if a.Type == domain.RealAnomaly {
+			evt, evtD = 1, "se confirmó que ningún evento lo explica"
+		} else if ev.EventExplainsShift {
+			evt, evtD = 1, "evento coherente en hora, dirección y duración"
+		}
+	}
+	c := func(key, label string, w, sc float64, d string) domain.ConfidenceComponent {
+		return domain.ConfidenceComponent{Key: key, Label: label, Weight: w, Score: round(sc, 2), Detail: d}
+	}
+	return []domain.ConfidenceComponent{
+		c("magnitude", "Magnitud", 0.35, mag, magD),
+		c("persistence", "Persistencia", 0.25, pers, fmt.Sprintf("%d h", max(ev.PersistentHours, 0))),
+		c("variables", "Variables que coinciden", 0.25, vars, varsD),
+		c("events", "Coherencia con eventos", 0.15, evt, evtD),
+	}
+}
+
+func sign(v float64) int {
+	switch {
+	case v > 0:
+		return 1
+	case v < 0:
+		return -1
+	}
+	return 0
+}
+
+func dir(up bool) int {
+	if up {
+		return 1
+	}
+	return -1
+}
+
+func confidenceOf(cs []domain.ConfidenceComponent) float64 {
+	t := 0.0
+	for _, c := range cs {
+		t += c.Weight * c.Score
+	}
+	return round(clamp(t, 0, 0.97), 2)
+}
+
+// impact quantifies the anomaly: extra energy, monthly cost and reactive energy.
+func (e *Engine) impact(a domain.Anomaly, s MeterStats) *domain.Impact {
+	extraDay := s.CurrentKWh - s.BaselineKWh
+	pf := s.Cur.PowerFactor
+	if pf <= 0 || pf > 1 {
+		pf = s.Base.PowerFactor
+	}
+	ratio := 0.0
+	if pf > 0 && pf <= 1 {
+		ratio = math.Tan(math.Acos(pf))
+	}
+	im := &domain.Impact{
+		ExtraKWhPerDay:   round(extraDay, 1),
+		ExtraKWhPerMonth: round(extraDay*30, 0),
+		ExtraKWhSoFar:    s.ExtraKWhSoFar,
+		CostPerMonthCOP:  round(extraDay*30*e.cfg.TariffCOPPerKWh, 0),
+		TariffCOPPerKWh:  e.cfg.TariffCOPPerKWh,
+		PowerFactor:      round(pf, 2),
+		ReactiveRatio:    round(ratio, 2),
+		ReactiveExcess:   round(math.Max(0, ratio-e.cfg.ReactiveLimit), 2),
+		ReactiveKVArhDay: round(s.CurrentKWh*ratio, 0),
+	}
+	switch a.Type {
+	case domain.DataQuality:
+		// No extra energy, but the meter's data is unusable for billing and reports.
+		im.Normalized = round(clamp(0.5+s.MaxFlagShare24h, 0, 1), 3)
+	default:
+		if s.BaselineKWh > 0 {
+			im.Normalized = round(clamp(math.Abs(extraDay)/s.BaselineKWh, 0, 1), 3)
+		}
+	}
+	return im
 }
 
 // Prioritize computes the priority score and rank of each finding:
 //
-//	severity × magnitude × persistence × (1 − explained)
+//	severity weight (HIGH 3 · MEDIUM 2 · LOW 1) × confidence × normalized impact
 func Prioritize(fs []Finding) {
-	cfg := DefaultConfig()
 	for i := range fs {
 		a := &fs[i].Anomaly
-		s := fs[i].Stats
-		mag := clamp(math.Abs(a.Evidence.ShiftPct)/100, 0, 1)
-		pers := clamp(float64(a.Evidence.PersistentHours)/cfg.PersistenceHours, 0, 1)
-		if a.Type == domain.DataQuality {
-			mag = clamp(0.5+float64(s.InvalidReadings)/40+(1-s.Coherence), 0, 1)
+		w := map[domain.Severity]float64{domain.SeverityHigh: 3, domain.SeverityMedium: 2, domain.SeverityLow: 1}[a.Severity]
+		imp := 0.0
+		if a.Impact != nil {
+			imp = a.Impact.Normalized
 		}
-		explained := 0.0
-		if a.Evidence.EventExplainsShift {
-			explained = 0.8
-		}
-		a.PriorityScore = round(a.Severity.Weight()*mag*pers*(1-explained), 3)
+		a.PriorityScore = round(w*a.Confidence*imp, 3)
 	}
 	sort.SliceStable(fs, func(i, j int) bool { return fs[i].Anomaly.PriorityScore > fs[j].Anomaly.PriorityScore })
 	for i := range fs {

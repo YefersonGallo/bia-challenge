@@ -45,7 +45,12 @@ type Methodology struct {
 	BaselineDays      int     `json:"baseline_days"`
 	ShiftThresholdPct float64 `json:"shift_threshold_pct"`
 	MinEpisodeHours   int     `json:"min_episode_hours"`
-	VoltageTolPct     float64 `json:"voltage_tol_pct"`
+	VoltageMin        float64 `json:"voltage_min"`
+	VoltageMax        float64 `json:"voltage_max"`
+	VoltageJump       float64 `json:"voltage_jump"`
+	DurationTolHours  float64 `json:"duration_tol_hours"`
+	DQHighSharePct    float64 `json:"dq_high_share_pct"`
+	TariffCOPPerKWh   float64 `json:"tariff_cop_per_kwh"`
 	PFJump            float64 `json:"pf_jump"`
 	CriticalPct       float64 `json:"critical_pct"`
 	HighPct           float64 `json:"high_pct"`
@@ -63,7 +68,12 @@ func methodologyOf(c analysis.Config) Methodology {
 		BaselineDays:      c.BaselineDays,
 		ShiftThresholdPct: c.ShiftThreshold * 100,
 		MinEpisodeHours:   c.MinEpisodeHours,
-		VoltageTolPct:     c.VoltageTol * 100,
+		VoltageMin:        c.VoltageMin,
+		VoltageMax:        c.VoltageMax,
+		VoltageJump:       c.VoltageJump,
+		DurationTolHours:  c.DurationTol,
+		DQHighSharePct:    c.DQHighShare * 100,
+		TariffCOPPerKWh:   c.TariffCOPPerKWh,
 		PFJump:            c.PFJump,
 		CriticalPct:       c.CriticalPct,
 		HighPct:           c.HighPct,

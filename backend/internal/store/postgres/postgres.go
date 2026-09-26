@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"sort"
+	"time"
 
 	"github.com/lib/pq"
 
@@ -257,25 +258,39 @@ func (s *Store) ReplaceAnomalies(ctx context.Context, runID string, as []domain.
 	for _, a := range as {
 		steps, _ := json.Marshal(a.NextSteps)
 		ev, _ := json.Marshal(a.Evidence)
+		det, _ := json.Marshal(detailsOf(a))
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO anomalies (id, analysis_id, meter_id, detected_at, type, severity, confidence, priority_score, rank,
-				reason, recommended_action, next_steps, explained_by, status, evidence)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+				reason, recommended_action, next_steps, explained_by, status, evidence, details)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
 			a.ID, runID, a.MeterID, a.DetectedAt, a.Type, a.Severity, a.Confidence, a.PriorityScore, a.Rank,
-			a.Reason, a.RecommendedAction, steps, a.ExplainedBy, a.Status, ev); err != nil {
+			a.Reason, a.RecommendedAction, steps, a.ExplainedBy, a.Status, ev, det); err != nil {
 			return err
 		}
 	}
 	return tx.Commit()
 }
 
-const anomalyCols = `id, analysis_id, meter_id, detected_at, type, severity, confidence, priority_score, rank, reason, recommended_action, next_steps, explained_by, status, evidence`
+const anomalyCols = `id, analysis_id, meter_id, detected_at, type, severity, confidence, priority_score, rank, reason, recommended_action, next_steps, explained_by, status, evidence, details`
+
+// details groups the anomaly fields added by the plan (migration 002).
+type details struct {
+	EvidenceSummary     string                       `json:"evidence_summary"`
+	ConfidenceBreakdown []domain.ConfidenceComponent `json:"confidence_breakdown"`
+	Impact              *domain.Impact               `json:"projected_impact,omitempty"`
+	ChangePointAt       *time.Time                   `json:"change_point_at,omitempty"`
+	EndedAt             *time.Time                   `json:"ended_at,omitempty"`
+}
+
+func detailsOf(a domain.Anomaly) details {
+	return details{a.EvidenceSummary, a.ConfidenceBreakdown, a.Impact, a.ChangePointAt, a.EndedAt}
+}
 
 func scanAnomaly(row interface{ Scan(...any) error }) (domain.Anomaly, error) {
 	var a domain.Anomaly
-	var steps, ev []byte
+	var steps, ev, det []byte
 	if err := row.Scan(&a.ID, &a.AnalysisID, &a.MeterID, &a.DetectedAt, &a.Type, &a.Severity, &a.Confidence, &a.PriorityScore, &a.Rank,
-		&a.Reason, &a.RecommendedAction, &steps, &a.ExplainedBy, &a.Status, &ev); err != nil {
+		&a.Reason, &a.RecommendedAction, &steps, &a.ExplainedBy, &a.Status, &ev, &det); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return a, app.ErrNotFound
 		}
@@ -285,7 +300,39 @@ func scanAnomaly(row interface{ Scan(...any) error }) (domain.Anomaly, error) {
 	if err := json.Unmarshal(steps, &a.NextSteps); err != nil {
 		return a, err
 	}
+	var d details
+	if err := json.Unmarshal(det, &d); err != nil {
+		return a, err
+	}
+	a.EvidenceSummary, a.ConfidenceBreakdown, a.Impact, a.ChangePointAt, a.EndedAt = d.EvidenceSummary, d.ConfidenceBreakdown, d.Impact, d.ChangePointAt, d.EndedAt
 	return a, json.Unmarshal(ev, &a.Evidence)
+}
+
+// AddAction implements app.ActionRepository.
+func (s *Store) AddAction(ctx context.Context, a domain.AnomalyAction) error {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO anomaly_actions (id, anomaly_id, action, note, status, actor, at) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+		a.ID, a.AnomalyID, a.Action, a.Note, string(a.Status), a.Actor, a.At)
+	return err
+}
+
+// Actions implements app.ActionRepository (oldest first).
+func (s *Store) Actions(ctx context.Context, anomalyID string) ([]domain.AnomalyAction, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, anomaly_id, action, note, status, actor, at FROM anomaly_actions WHERE anomaly_id = $1 ORDER BY at, id`, anomalyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []domain.AnomalyAction
+	for rows.Next() {
+		var a domain.AnomalyAction
+		var st string
+		if err := rows.Scan(&a.ID, &a.AnomalyID, &a.Action, &a.Note, &st, &a.Actor, &a.At); err != nil {
+			return nil, err
+		}
+		a.Status, a.At = domain.AnomalyStatus(st), a.At.UTC()
+		out = append(out, a)
+	}
+	return out, rows.Err()
 }
 
 // Anomalies returns the findings of the most recent run that has any.

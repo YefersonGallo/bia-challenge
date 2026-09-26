@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 )
@@ -61,5 +63,30 @@ func TestEventKindFromDescription(t *testing.T) {
 func TestFalsePositiveIsNotAnAnomaly(t *testing.T) {
 	if (Anomaly{Type: FalsePositive}).IsAnomaly() || !(Anomaly{Type: RealAnomaly}).IsAnomaly() {
 		t.Fatal("IsAnomaly must be false only for false positives")
+	}
+}
+
+func TestEventAttributes(t *testing.T) {
+	cases := []struct {
+		ev       Event
+		cat      EventCategory
+		eff      EventEffect
+		duration float64
+	}{
+		{Event{Type: "OPERATIONAL_CHANGE", Description: "New production line activated"}, EventExplanatory, EffectUp, 0},
+		{Event{Type: "SCHEDULED_OUTAGE", Description: "Scheduled maintenance outage for 12 hours"}, EventExplanatory, EffectDown, 12},
+		{Event{Type: "UNKNOWN", Description: "No operational event reported"}, EventNonExplanatory, EffectNone, 0},
+		{Event{Type: "DATA_QUALITY", Description: "Intermittent readings and abnormal electrical jumps"}, EventInformational, EffectNone, 0},
+		{Event{Type: "SCHEDULED_SHUTDOWN", Description: "Parada programada del horno (72 h)"}, EventExplanatory, EffectDown, 72},
+		{Event{Type: "MAINTENANCE", Description: "Mantenimiento de 3 días"}, EventExplanatory, EffectDown, 72},
+	}
+	for _, c := range cases {
+		if c.ev.Category() != c.cat || c.ev.ExpectedEffect() != c.eff || c.ev.DurationHours() != c.duration {
+			t.Errorf("%s %q → %s %s %.0f", c.ev.Type, c.ev.Description, c.ev.Category(), c.ev.ExpectedEffect(), c.ev.DurationHours())
+		}
+	}
+	b, _ := json.Marshal(cases[1].ev)
+	if !strings.Contains(string(b), `"duration_hours":12`) || !strings.Contains(string(b), `"category":"EXPLANATORY"`) {
+		t.Errorf("json = %s", b)
 	}
 }

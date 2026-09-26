@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/yefersongallo/bia-energy/backend/internal/analysis"
 	"github.com/yefersongallo/bia-energy/backend/internal/dataset"
@@ -124,5 +125,71 @@ func TestFallbackOnAPIError(t *testing.T) {
 	e, err := WithFallback{Primary: c, Fallback: Template{}}.Explain(context.Background(), a)
 	if err != nil || e.Source != "template" {
 		t.Fatalf("expected template fallback, got %v %v", e.Source, err)
+	}
+}
+
+type countingExplainer struct {
+	calls int
+	delay time.Duration
+}
+
+func (c *countingExplainer) Explain(ctx context.Context, a domain.Anomaly) (Explanation, error) {
+	c.calls++
+	if c.delay > 0 {
+		select {
+		case <-time.After(c.delay):
+		case <-ctx.Done():
+			return Explanation{}, ctx.Err()
+		}
+	}
+	return Template{}.Explain(ctx, a)
+}
+
+// Running the analysis twice with the same evidence must not call the LLM again.
+func TestCachedExplainerReusesExplanations(t *testing.T) {
+	a := findings(t)["M-109"]
+	inner := &countingExplainer{}
+	c := &Cached{Next: inner}
+	for i := 0; i < 3; i++ {
+		if _, err := c.Explain(context.Background(), a); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if inner.calls != 1 {
+		t.Fatalf("calls = %d, want 1", inner.calls)
+	}
+	b := a
+	b.Confidence += 0.01
+	_, _ = c.Explain(context.Background(), b)
+	if inner.calls != 2 {
+		t.Fatalf("changed evidence must call again, calls = %d", inner.calls)
+	}
+}
+
+// A slow LLM falls back to the template instead of blocking the analysis.
+func TestFallbackOnTimeout(t *testing.T) {
+	a := findings(t)["M-104"]
+	var fell error
+	w := WithFallback{Primary: &countingExplainer{delay: time.Second}, Fallback: Template{}, Timeout: 20 * time.Millisecond,
+		OnFallback: func(_ string, err error) { fell = err }}
+	start := time.Now()
+	e, err := w.Explain(context.Background(), a)
+	if err != nil || e.Source != "template" || fell == nil {
+		t.Fatalf("explanation %+v, err %v, fallback %v", e, err, fell)
+	}
+	if time.Since(start) > 500*time.Millisecond {
+		t.Fatal("timeout not applied")
+	}
+}
+
+func TestTemplateWritesAGroundedSummary(t *testing.T) {
+	for id, a := range findings(t) {
+		e, _ := Template{}.Explain(context.Background(), a)
+		if e.EvidenceSummary == "" {
+			t.Errorf("%s without evidence summary", id)
+		}
+		if err := Validate(e, a.Evidence); err != nil {
+			t.Errorf("%s: %v", id, err)
+		}
 	}
 }

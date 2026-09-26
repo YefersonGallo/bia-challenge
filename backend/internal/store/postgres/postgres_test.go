@@ -56,6 +56,15 @@ func TestPostgresStoreEndToEnd(t *testing.T) {
 	if len(as[0].Evidence.Signals) == 0 || len(as[0].NextSteps) == 0 {
 		t.Fatal("evidence and next steps must round-trip through JSONB")
 	}
+	if as[0].Impact == nil || len(as[0].ConfidenceBreakdown) == 0 || as[0].ChangePointAt == nil || as[0].EvidenceSummary == "" {
+		t.Fatalf("details must round-trip through JSONB: %+v", as[0])
+	}
+	if _, err := svc.AddAction(ctx, as[0].ID, "tester", app.ActionInput{Action: "note", Note: "revisado en sitio"}); err != nil {
+		t.Fatal(err)
+	}
+	if acts, err := st.Actions(ctx, as[0].ID); err != nil || len(acts) != 1 || acts[0].Note != "revisado en sitio" {
+		t.Fatalf("actions = %+v, err = %v", acts, err)
+	}
 	if _, err := svc.UpdateAnomalyStatus(ctx, as[0].ID, domain.AnomalyAcknowledged); err != nil {
 		t.Fatal(err)
 	}

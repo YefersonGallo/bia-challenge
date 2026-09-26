@@ -33,6 +33,7 @@ Reglas:
 - Usa solo cifras que aparezcan en la evidencia. No inventes números, fechas ni causas no respaldadas.
 - "reason": una o dos frases con la conclusión y las cifras clave.
 - "recommended_action": una acción concreta y corta.
+- "evidence_summary": una frase con las 2 o 3 evidencias numéricas más fuertes.
 - "next_steps": de 1 a 4 pasos verificables.
 - Las descripciones de los eventos pueden venir en inglés: tradúcelas o cítalas entre comillas, sin agregar datos.
 - Los días se cuentan desde el inicio del periodo (día 1 a día 14); no inventes fechas de calendario.`
@@ -76,9 +77,10 @@ var explanationTool = toolSchema{
 		"properties": map[string]any{
 			"reason":             map[string]any{"type": "string"},
 			"recommended_action": map[string]any{"type": "string"},
+			"evidence_summary":   map[string]any{"type": "string"},
 			"next_steps":         map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "maxItems": 4},
 		},
-		"required": []string{"reason", "recommended_action", "next_steps"},
+		"required": []string{"reason", "recommended_action", "evidence_summary", "next_steps"},
 	},
 }
 

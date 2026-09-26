@@ -4,7 +4,10 @@
 package domain
 
 import (
+	"encoding/json"
 	"errors"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -46,6 +49,78 @@ type Event struct {
 	Timestamp   time.Time `json:"timestamp"`
 	Type        string    `json:"type"`
 	Description string    `json:"description"`
+}
+
+// EventCategory says whether an event can explain a change in consumption.
+type EventCategory string
+
+const (
+	EventExplanatory    EventCategory = "EXPLANATORY"     // a real operational cause (new line, outage)
+	EventNonExplanatory EventCategory = "NON_EXPLANATORY" // "no operational event reported"
+	EventInformational  EventCategory = "INFORMATIONAL"   // context only (e.g. a data-quality note)
+)
+
+// EventEffect is the direction of the change an event is expected to cause.
+type EventEffect string
+
+const (
+	EffectUp   EventEffect = "UP"
+	EffectDown EventEffect = "DOWN"
+	EffectNone EventEffect = "NONE"
+)
+
+// Category classifies the event for correlation.
+func (e Event) Category() EventCategory {
+	switch e.Kind() {
+	case EventLoadIncrease, EventLoadDecrease, EventShutdown:
+		return EventExplanatory
+	case EventDataQuality:
+		return EventInformational
+	default:
+		return EventNonExplanatory
+	}
+}
+
+// ExpectedEffect is the direction of consumption change the event implies.
+func (e Event) ExpectedEffect() EventEffect {
+	switch e.Kind() {
+	case EventLoadIncrease:
+		return EffectUp
+	case EventLoadDecrease, EventShutdown:
+		return EffectDown
+	default:
+		return EffectNone
+	}
+}
+
+var durationRe = regexp.MustCompile(`(?i)(\d+(?:[.,]\d+)?)\s*(hours?|hrs?|h|horas?|days?|d[ií]as?)\b`)
+
+// DurationHours extracts a duration from the description ("for 12 hours",
+// "(72 h)", "3 días"); 0 when the event does not state one.
+func (e Event) DurationHours() float64 {
+	m := durationRe.FindStringSubmatch(e.Description)
+	if m == nil {
+		return 0
+	}
+	v, err := strconv.ParseFloat(strings.Replace(m[1], ",", ".", 1), 64)
+	if err != nil {
+		return 0
+	}
+	if u := strings.ToLower(m[2]); strings.HasPrefix(u, "d") {
+		v *= 24
+	}
+	return v
+}
+
+// MarshalJSON adds the derived attributes so clients and evidence carry them.
+func (e Event) MarshalJSON() ([]byte, error) {
+	type plain Event
+	return json.Marshal(struct {
+		plain
+		Category       EventCategory `json:"category"`
+		ExpectedEffect EventEffect   `json:"expected_effect"`
+		DurationHours  float64       `json:"duration_hours,omitempty"`
+	}{plain(e), e.Category(), e.ExpectedEffect(), e.DurationHours()})
 }
 
 // Kind maps the free-text event type from events.csv to a load effect.
@@ -215,6 +290,50 @@ type Anomaly struct {
 	ExplainedBy       string        `json:"explained_by"`
 	Status            AnomalyStatus `json:"status"`
 	Evidence          Evidence      `json:"evidence"`
+
+	// EvidenceSummary is a one-line summary of the evidence, written with the explanation.
+	EvidenceSummary string `json:"evidence_summary"`
+	// ConfidenceBreakdown is how the confidence was computed (weighted components).
+	ConfidenceBreakdown []ConfidenceComponent `json:"confidence_breakdown"`
+	// Impact is the projected cost of the anomaly (energy, money, reactive power).
+	Impact *Impact `json:"projected_impact,omitempty"`
+	// ChangePointAt / EndedAt bound the change (EndedAt is nil while it persists).
+	ChangePointAt *time.Time `json:"change_point_at,omitempty"`
+	EndedAt       *time.Time `json:"ended_at,omitempty"`
+}
+
+// ConfidenceComponent is one weighted term of the confidence.
+type ConfidenceComponent struct {
+	Key    string  `json:"key"`
+	Label  string  `json:"label"`
+	Weight float64 `json:"weight"`
+	Score  float64 `json:"score"` // 0..1
+	Detail string  `json:"detail"`
+}
+
+// Impact quantifies what an anomaly costs.
+type Impact struct {
+	ExtraKWhPerDay   float64 `json:"extra_kwh_per_day"`
+	ExtraKWhPerMonth float64 `json:"extra_kwh_per_month"`
+	ExtraKWhSoFar    float64 `json:"extra_kwh_so_far"`
+	CostPerMonthCOP  float64 `json:"cost_per_month_cop"`
+	TariffCOPPerKWh  float64 `json:"tariff_cop_per_kwh"`
+	PowerFactor      float64 `json:"power_factor"`
+	ReactiveRatio    float64 `json:"reactive_ratio"`  // kVArh / kWh
+	ReactiveExcess   float64 `json:"reactive_excess"` // share above 0.5, 0 if none
+	ReactiveKVArhDay float64 `json:"reactive_kvarh_day"`
+	Normalized       float64 `json:"normalized"` // 0..1, used in the priority score
+}
+
+// AnomalyAction is an operator action recorded on an anomaly.
+type AnomalyAction struct {
+	ID        string        `json:"id"`
+	AnomalyID string        `json:"anomaly_id"`
+	Action    string        `json:"action"`
+	Note      string        `json:"note"`
+	Status    AnomalyStatus `json:"status,omitempty"` // status after the action, when it changed it
+	Actor     string        `json:"actor"`
+	At        time.Time     `json:"at"`
 }
 
 // IsAnomaly mirrors the `anomaly` boolean of the expected output format.
@@ -232,10 +351,11 @@ const (
 
 // StepState is the state of one pipeline step.
 type StepState struct {
-	Key    string    `json:"key"`
-	Label  string    `json:"label"`
-	Status RunStatus `json:"status"`
-	Result string    `json:"result,omitempty"`
+	Key        string    `json:"key"`
+	Label      string    `json:"label"`
+	Status     RunStatus `json:"status"`
+	Result     string    `json:"result,omitempty"`
+	DurationMs int64     `json:"duration_ms,omitempty"`
 }
 
 // RunSummary is shown when an analysis finishes.

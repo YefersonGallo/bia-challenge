@@ -3,6 +3,7 @@ package explain
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/yefersongallo/bia-energy/backend/internal/analysis"
 	"github.com/yefersongallo/bia-energy/backend/internal/domain"
@@ -36,8 +37,8 @@ func (Template) Explain(_ context.Context, a domain.Anomaly) (Explanation, error
 		e.RecommendedAction = "Investigar medidor e instalación."
 		e.NextSteps = []string{
 			fmt.Sprintf("Inspeccionar en sitio el equipo de %s", ev.MeterName),
-			"Revisar arranques en vacío y consumo fuera de turno",
-			"Verificar el banco de capacitores y la compensación de reactiva",
+			"Revisar cargas nuevas, conexiones no autorizadas o fallas",
+			"Evaluar el impacto del factor de potencia bajo y la compensación de reactiva",
 		}
 	case domain.DataQuality:
 		what := "lecturas físicamente inconsistentes"
@@ -47,20 +48,36 @@ func (Template) Explain(_ context.Context, a domain.Anomaly) (Explanation, error
 		e.Reason = fmt.Sprintf("El consumo es estable (%s), pero hay %s %s; el problema está en la medición, no en la carga.", pct(ev.VariationPct), num(float64(ev.InvalidReadings), 0), what)
 		e.RecommendedAction = "Validar medidor y telemetría."
 		e.NextSteps = []string{
-			"Revisar transformadores de corriente y de potencial",
-			"Validar comunicación y firmware del medidor",
-			"Excluir las lecturas inconsistentes hasta recalibrar",
+			"Validar el medidor y los transformadores de corriente y de potencial",
+			"Marcar sus lecturas como no confiables para facturación y reportes",
+			"Revisar comunicación y firmware del medidor",
 		}
 	case domain.ExplainableAnomaly:
 		e.Reason = fmt.Sprintf("Aumento de %s que coincide con %s; la relación eléctrica se mantiene sana.", pct(ev.VariationPct), eventRef(ev))
 		e.RecommendedAction = "Validar con operación y actualizar el baseline."
-		e.NextSteps = []string{"Confirmar con Producción que la carga nueva es la esperada", "Recalcular el baseline con la nueva condición operativa"}
+		e.NextSteps = []string{
+			"Confirmar con Producción que la carga nueva es la esperada",
+			"Ajustar el baseline, la potencia contratada y la compensación de reactiva si aplica",
+		}
 	case domain.FalsePositive:
 		e.Reason = fmt.Sprintf("La caída de %s durante %s h coincide con %s, y el consumo volvió a su nivel al terminar.", pct(ev.ShiftPct), num(float64(ev.PersistentHours), 0), eventRef(ev))
 		e.RecommendedAction = "No escalar."
-		e.NextSteps = []string{"Excluir la ventana del evento del cálculo del baseline"}
+		e.NextSteps = []string{"Registrar como evento operativo conocido", "Excluir la ventana del evento del cálculo del baseline"}
 	}
+	e.EvidenceSummary = summary(ev)
 	return e, nil
+}
+
+// summary lists the strongest evidence signals in one line.
+func summary(ev domain.Evidence) string {
+	var parts []string
+	for _, s := range ev.Signals {
+		if len(parts) == 3 {
+			break
+		}
+		parts = append(parts, s.Description)
+	}
+	return strings.Join(parts, " · ")
 }
 
 // eventRef names the first related event as it was registered (quoted: the

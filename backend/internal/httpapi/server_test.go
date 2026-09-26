@@ -185,3 +185,107 @@ func TestServesSPAWhenStaticDirIsSet(t *testing.T) {
 		t.Fatalf("API still requires auth, got %d", r.Code)
 	}
 }
+
+func TestErrorFormat(t *testing.T) {
+	hs := setup(t)
+	var body struct {
+		Error struct{ Code, Message string }
+	}
+	hs.do("GET", "/api/meters/M-999", nil, http.StatusNotFound, &body)
+	if body.Error.Code != "NOT_FOUND" || body.Error.Message == "" {
+		t.Fatalf("error body = %+v", body)
+	}
+	hs.do("GET", "/api/meters?order=sideways", nil, http.StatusBadRequest, &body)
+	if body.Error.Code != "INVALID" {
+		t.Fatalf("error code = %q", body.Error.Code)
+	}
+}
+
+func TestReadingsResolutionAndWindow(t *testing.T) {
+	hs := setup(t)
+	var readings []domain.Reading
+	hs.do("GET", "/api/meters/M-104/readings?resolution=raw&from=2026-09-08&to=2026-09-08", nil, http.StatusOK, &readings)
+	if len(readings) != 24 {
+		t.Fatalf("one day of readings = %d, want 24", len(readings))
+	}
+	var days []analysis.DayPoint
+	hs.do("GET", "/api/meters/M-104/readings?resolution=day&from=2026-09-10T00:00:00Z", nil, http.StatusOK, &days)
+	if len(days) == 0 || len(days) >= 14 || days[0].Date < "2026-09-10" {
+		t.Fatalf("days from 10th = %d (first %+v)", len(days), days)
+	}
+	hs.do("GET", "/api/meters/M-104/readings?from=yesterday", nil, http.StatusBadRequest, nil)
+	hs.do("GET", "/api/meters/M-104/readings?resolution=minute", nil, http.StatusBadRequest, nil)
+}
+
+func TestMetersOrder(t *testing.T) {
+	hs := setup(t)
+	var desc, asc []app.MeterSummary
+	hs.do("GET", "/api/meters?sort=consumption", nil, http.StatusOK, &desc)
+	hs.do("GET", "/api/meters?sort=consumption&order=asc", nil, http.StatusOK, &asc)
+	if len(desc) != len(asc) || desc[0].ID != asc[len(asc)-1].ID {
+		t.Fatalf("asc must reverse desc: %s vs %s", desc[0].ID, asc[len(asc)-1].ID)
+	}
+}
+
+func TestInsightEndpoints(t *testing.T) {
+	hs := setup(t)
+	hs.do("POST", "/api/ai/analyze", nil, http.StatusAccepted, nil)
+	hs.svc.Wait()
+
+	var heat []app.HeatmapRow
+	hs.do("GET", "/api/dashboard/heatmap", nil, http.StatusOK, &heat)
+	if len(heat) == 0 || len(heat[0].Days) != 14 {
+		t.Fatalf("heatmap rows = %d", len(heat))
+	}
+	var base app.Baseline
+	hs.do("GET", "/api/meters/M-109/baseline", nil, http.StatusOK, &base)
+	if base.DailyKWh <= 0 || base.P90[12] < base.P10[12] || base.VoltageBand[0] != 209 {
+		t.Fatalf("baseline = %+v", base)
+	}
+	var fc app.Forecast
+	hs.do("GET", "/api/meters/M-109/forecast", nil, http.StatusOK, &fc)
+	if len(fc.Points) != 24 || fc.ProjectedKWh <= fc.ExpectedKWh || fc.Impact == nil {
+		t.Fatalf("forecast = %d points, projected %.0f vs expected %.0f", len(fc.Points), fc.ProjectedKWh, fc.ExpectedKWh)
+	}
+	hs.do("GET", "/api/meters/M-999/forecast", nil, http.StatusNotFound, nil)
+}
+
+func TestAnomalyActionsRecordTheUser(t *testing.T) {
+	hs := setup(t)
+	hs.do("POST", "/api/ai/analyze", nil, http.StatusAccepted, nil)
+	hs.svc.Wait()
+	var anomalies []domain.Anomaly
+	hs.do("GET", "/api/anomalies", nil, http.StatusOK, &anomalies)
+	id := anomalies[0].ID
+
+	var detail app.AnomalyDetail
+	hs.do("POST", "/api/anomalies/"+id+"/actions", map[string]string{"action": "investigate", "note": "cuadrilla asignada"}, http.StatusCreated, &detail)
+	if detail.Status != domain.AnomalyInProgress || len(detail.Actions) == 0 {
+		t.Fatalf("status = %s, actions = %+v", detail.Status, detail.Actions)
+	}
+	last := detail.Actions[len(detail.Actions)-1]
+	if last.Actor != "operador@vatio.demo" || last.Note != "cuadrilla asignada" {
+		t.Fatalf("last action = %+v", last)
+	}
+	hs.do("POST", "/api/anomalies/"+id+"/actions", map[string]string{"action": "explode"}, http.StatusBadRequest, nil)
+	hs.do("POST", "/api/anomalies/"+id+"/actions", map[string]string{}, http.StatusBadRequest, nil)
+	hs.do("POST", "/api/anomalies/nope/actions", map[string]string{"action": "note"}, http.StatusNotFound, nil)
+}
+
+func TestAnalyzeWhileRunningReturnsTheSameRun(t *testing.T) {
+	st := memory.New()
+	ds := dataset.Generate()
+	_ = st.Seed(context.Background(), ds.Meters, ds.Readings, ds.Events)
+	svc := app.New(st, analysis.New(analysis.DefaultConfig()), explain.Template{}, app.Options{StepDelay: 30 * time.Millisecond})
+	auth := httpapi.Auth{Secret: []byte("test"), User: "u", Password: "p", TTL: time.Hour}
+	hs := &harness{t: t, h: httpapi.New(svc, httpapi.Config{Auth: auth}), svc: svc}
+	tok, _, _ := auth.Login("u", "p")
+	hs.token = tok
+	var first, second domain.AnalysisRun
+	hs.do("POST", "/api/ai/analyze", nil, http.StatusAccepted, &first)
+	hs.do("POST", "/api/ai/analyze", nil, http.StatusAccepted, &second)
+	svc.Wait()
+	if first.ID != second.ID {
+		t.Fatalf("second call started %s while %s was running", second.ID, first.ID)
+	}
+}

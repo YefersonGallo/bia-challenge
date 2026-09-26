@@ -19,6 +19,28 @@ type Store struct {
 	events    []domain.Event
 	runs      map[string]domain.AnalysisRun
 	anomalies []domain.Anomaly // of the latest completed run
+	actions   []domain.AnomalyAction
+}
+
+// AddAction implements app.ActionRepository.
+func (s *Store) AddAction(_ context.Context, a domain.AnomalyAction) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.actions = append(s.actions, a)
+	return nil
+}
+
+// Actions implements app.ActionRepository (oldest first).
+func (s *Store) Actions(_ context.Context, anomalyID string) ([]domain.AnomalyAction, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []domain.AnomalyAction
+	for _, a := range s.actions {
+		if a.AnomalyID == anomalyID {
+			out = append(out, a)
+		}
+	}
+	return out, nil
 }
 
 var _ app.Store = (*Store)(nil)

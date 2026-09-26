@@ -38,6 +38,9 @@ type Service struct {
 
 	statsMu sync.Mutex
 	stats   map[string]analysis.MeterStats
+
+	markMu sync.Mutex
+	marks  map[string]time.Time // end of the previous step, per run (step durations)
 }
 
 // New builds the service.
@@ -111,6 +114,7 @@ type MeterQuery struct {
 	Status string // "", OK, ALERT, CRITICAL
 	Q      string // search by meter id or name
 	Sort   string // severity (default) | consumption | variation
+	Order  string // desc (default) | asc
 }
 
 func (s *Service) anomaliesByMeter(ctx context.Context) (map[string]domain.Anomaly, error) {
@@ -140,8 +144,23 @@ func summarize(m domain.Meter, st analysis.MeterStats, a *domain.Anomaly) MeterS
 	}
 	if a != nil {
 		ms.Anomaly = ref(*a)
+		ms.Status, ms.StatusReason = derivedStatus(*a, st)
 	}
 	return ms
+}
+
+// derivedStatus is the meter state once the AI verdict exists (plan, phase 2):
+// OK for a false positive, CRITICAL for a HIGH real anomaly, ALERT otherwise.
+// Before any analysis the rule status of the engine is shown.
+func derivedStatus(a domain.Anomaly, st analysis.MeterStats) (domain.MeterStatus, string) {
+	switch {
+	case a.Type == domain.FalsePositive:
+		return domain.StatusOK, "cambio explicado por un evento operativo y ya recuperado"
+	case a.Type == domain.RealAnomaly && a.Severity == domain.SeverityHigh:
+		return domain.StatusCritical, st.StatusReason
+	default:
+		return domain.StatusAlert, st.StatusReason
+	}
 }
 
 var statusRank = map[domain.MeterStatus]int{domain.StatusCritical: 3, domain.StatusAlert: 2, domain.StatusOK: 1}
@@ -164,9 +183,6 @@ func (s *Service) ListMeters(ctx context.Context, q MeterQuery) ([]MeterSummary,
 	var out []MeterSummary
 	for _, m := range meters {
 		st := stats[m.ID]
-		if q.Status != "" && !strings.EqualFold(string(st.Status), q.Status) {
-			continue
-		}
 		if needle != "" && !strings.Contains(strings.ToLower(m.ID), needle) && !strings.Contains(strings.ToLower(m.Name), needle) {
 			continue
 		}
@@ -174,7 +190,11 @@ func (s *Service) ListMeters(ctx context.Context, q MeterQuery) ([]MeterSummary,
 		if a, ok := anoms[m.ID]; ok {
 			ap = &a
 		}
-		out = append(out, summarize(m, st, ap))
+		ms := summarize(m, st, ap)
+		if q.Status != "" && !strings.EqualFold(string(ms.Status), q.Status) {
+			continue
+		}
+		out = append(out, ms)
 	}
 	severityScore := func(ms MeterSummary) float64 {
 		score := float64(statusRank[ms.Status])
@@ -197,6 +217,11 @@ func (s *Service) ListMeters(ctx context.Context, q MeterQuery) ([]MeterSummary,
 			return abs(out[i].VariationPct) > abs(out[j].VariationPct)
 		}
 	})
+	if q.Order == "asc" {
+		for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+			out[i], out[j] = out[j], out[i]
+		}
+	}
 	return out, nil
 }
 
@@ -246,19 +271,46 @@ func (s *Service) Meter(ctx context.Context, id string) (MeterDetail, error) {
 	return MeterDetail{}, fmt.Errorf("meter %s: %w", id, ErrNotFound)
 }
 
+// ReadingsQuery selects the resolution and an optional time window.
+type ReadingsQuery struct {
+	Bucket   string     // "" or hour: raw hourly readings; day: daily aggregates
+	From, To *time.Time // inclusive bounds, both optional
+}
+
 // Readings returns raw hourly readings or daily aggregates of a meter.
-func (s *Service) Readings(ctx context.Context, id, bucket string) (any, error) {
+func (s *Service) Readings(ctx context.Context, id string, q ReadingsQuery) (any, error) {
 	if _, err := s.Meter(ctx, id); err != nil {
 		return nil, err
 	}
-	if bucket == "day" {
+	in := func(t time.Time) bool {
+		return (q.From == nil || !t.Before(*q.From)) && (q.To == nil || !t.After(*q.To))
+	}
+	if q.Bucket == "day" {
 		stats, err := s.statsByMeter(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return stats[id].Days, nil
+		out := []analysis.DayPoint{}
+		for _, d := range stats[id].Days {
+			// A day is kept when it overlaps the window.
+			t, err := time.Parse("2006-01-02", d.Date)
+			if err != nil || ((q.To == nil || !t.After(*q.To)) && (q.From == nil || t.Add(24*time.Hour).After(*q.From))) {
+				out = append(out, d)
+			}
+		}
+		return out, nil
 	}
-	return s.store.ReadingsByMeter(ctx, id)
+	rs, err := s.store.ReadingsByMeter(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	out := []domain.Reading{}
+	for _, r := range rs {
+		if in(r.Timestamp) {
+			out = append(out, r)
+		}
+	}
+	return out, nil
 }
 
 // Events returns every operational event, oldest first.
@@ -318,11 +370,15 @@ func (s *Service) Anomalies(ctx context.Context, q AnomalyQuery) ([]domain.Anoma
 // AnomalyDetail is the investigation view.
 type AnomalyDetail struct {
 	domain.Anomaly
-	Meter          domain.Meter        `json:"meter"`
-	Days           []analysis.DayPoint `json:"days"`
-	HourlyBaseline [24]float64         `json:"hourly_baseline"`
-	HourlyCurrent  [24]float64         `json:"hourly_current"`
-	IsAnomaly      bool                `json:"anomaly"`
+	Meter          domain.Meter              `json:"meter"`
+	Days           []analysis.DayPoint       `json:"days"`
+	HourlyBaseline [24]float64               `json:"hourly_baseline"`
+	HourlyCurrent  [24]float64               `json:"hourly_current"`
+	IsAnomaly      bool                      `json:"anomaly"`
+	Actions        []domain.AnomalyAction    `json:"actions"`
+	KFactor        float64                   `json:"k_factor"`
+	KMAD           float64                   `json:"k_mad"`
+	Flagged        []analysis.FlaggedReading `json:"flagged_readings"`
 }
 
 // Anomaly returns the investigation view of one anomaly.
@@ -335,7 +391,15 @@ func (s *Service) Anomaly(ctx context.Context, id string) (AnomalyDetail, error)
 	if err != nil {
 		return AnomalyDetail{}, err
 	}
-	return AnomalyDetail{Anomaly: a, Meter: md.Meter, Days: md.Stats.Days, HourlyBaseline: md.Stats.HourlyBaseline, HourlyCurrent: md.Stats.HourlyCurrent, IsAnomaly: a.IsAnomaly()}, nil
+	actions, err := s.store.Actions(ctx, a.ID)
+	if err != nil {
+		return AnomalyDetail{}, err
+	}
+	if actions == nil {
+		actions = []domain.AnomalyAction{}
+	}
+	return AnomalyDetail{Anomaly: a, Meter: md.Meter, Days: md.Stats.Days, HourlyBaseline: md.Stats.HourlyBaseline, HourlyCurrent: md.Stats.HourlyCurrent,
+		IsAnomaly: a.IsAnomaly(), Actions: actions, KFactor: md.Stats.KFactor, KMAD: md.Stats.KMAD, Flagged: md.Stats.Flagged}, nil
 }
 
 // UpdateAnomalyStatus moves an anomaly through its lifecycle.
@@ -413,9 +477,20 @@ func (s *Service) StartAnalysis(ctx context.Context) (domain.AnalysisRun, error)
 }
 
 func (s *Service) advance(ctx context.Context, run *domain.AnalysisRun, key, result string) {
+	now := time.Now()
+	s.markMu.Lock()
+	if s.marks == nil {
+		s.marks = map[string]time.Time{}
+	}
+	prev, ok := s.marks[run.ID]
+	if !ok {
+		prev = now
+	}
+	s.markMu.Unlock()
 	for i := range run.Steps {
 		if run.Steps[i].Key == key {
 			run.Steps[i].Status, run.Steps[i].Result = domain.RunCompleted, result
+			run.Steps[i].DurationMs = max(now.Sub(prev).Milliseconds(), 1)
 			run.CurrentStep = i + 1
 			if i+1 < len(run.Steps) {
 				run.Steps[i+1].Status = domain.RunRunning
@@ -426,9 +501,22 @@ func (s *Service) advance(ctx context.Context, run *domain.AnalysisRun, key, res
 	if s.opts.StepDelay > 0 {
 		time.Sleep(s.opts.StepDelay)
 	}
+	s.markMu.Lock()
+	if run.CurrentStep >= len(run.Steps) {
+		delete(s.marks, run.ID)
+	} else {
+		s.marks[run.ID] = time.Now() // the pacing delay is not part of the next step
+	}
+	s.markMu.Unlock()
 }
 
 func (s *Service) execute(ctx context.Context, run *domain.AnalysisRun) error {
+	s.markMu.Lock()
+	if s.marks == nil {
+		s.marks = map[string]time.Time{}
+	}
+	s.marks[run.ID] = time.Now()
+	s.markMu.Unlock()
 	meters, err := s.store.Meters(ctx)
 	if err != nil {
 		return err
@@ -473,6 +561,7 @@ func (s *Service) execute(ctx context.Context, run *domain.AnalysisRun) error {
 		a.AnalysisID = run.ID
 		a.DetectedAt = s.opts.Clock()
 		a.Reason, a.RecommendedAction, a.NextSteps, a.ExplainedBy = exp.Reason, exp.RecommendedAction, exp.NextSteps, exp.Source
+		a.EvidenceSummary = exp.EvidenceSummary
 		anomalies = append(anomalies, a)
 	}
 	s.advance(ctx, run, "explanation", fmt.Sprintf("%d explicaciones · %d con Claude", len(anomalies), byLLM))
@@ -545,10 +634,18 @@ func (s *Service) DashboardSummary(ctx context.Context) (Summary, error) {
 	if err != nil {
 		return Summary{}, err
 	}
+	anoms, err := s.anomaliesByMeter(ctx)
+	if err != nil {
+		return Summary{}, err
+	}
 	out := Summary{Meters: len(meters), StatusCounts: map[domain.MeterStatus]int{domain.StatusOK: 0, domain.StatusAlert: 0, domain.StatusCritical: 0}}
 	for _, m := range meters {
 		st := stats[m.ID]
-		out.StatusCounts[st.Status]++
+		status := st.Status
+		if a, ok := anoms[m.ID]; ok {
+			status, _ = derivedStatus(a, st)
+		}
+		out.StatusCounts[status]++
 		out.CurrentKWh += st.CurrentKWh
 		out.BaselineKWh += st.BaselineKWh
 		out.InvalidReading += st.InvalidReadings
