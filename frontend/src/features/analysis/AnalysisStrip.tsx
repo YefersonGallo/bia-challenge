@@ -74,6 +74,7 @@ export function AnalysisStrip({ run, onClose, onGoAnomalies, onGoReport }: Props
             <li key={s.key} data-status={s.status} className={cx('flex flex-col gap-[3px] border-l border-line px-3 pt-3.5 pb-3', t.bg)}>
               <span className={cx('font-mono text-[10px] font-semibold', t.num)}>
                 {s.status === 'COMPLETED' ? '✓' : String(i + 1).padStart(2, '0')}
+                {s.status === 'COMPLETED' && s.duration_ms != null && <span className="font-normal text-dim"> · {s.duration_ms} ms</span>}
               </span>
               <span className={cx('font-display text-sm font-semibold', t.title)}>{s.label}</span>
               <span className={cx('text-[11px] leading-snug', t.text)}>{stepText(s)}</span>

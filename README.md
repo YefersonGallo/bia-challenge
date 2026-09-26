@@ -77,8 +77,10 @@ Para usar PostgreSQL en local: `DATABASE_URL=postgres://… make dev-api`.
 | `PORT` | `8080` | Puerto HTTP |
 | `DATABASE_URL` | vacío → memoria | DSN de PostgreSQL |
 | `DATA_DIR` | `data` | Carpeta con `readings.csv`, `events.csv` y `meters.csv` (este último es opcional) |
-| `ANTHROPIC_API_KEY` | vacío | Activa las explicaciones redactadas por Claude |
-| `ANTHROPIC_MODEL` | `claude-sonnet-5` | Modelo de Claude |
+| `ANTHROPIC_API_KEY` (alias `LLM_API_KEY`) | vacío | Activa las explicaciones redactadas por Claude |
+| `ANTHROPIC_MODEL` (alias `LLM_MODEL`) | `claude-sonnet-5` | Modelo de Claude |
+| `LLM_TIMEOUT_MS` | `10000` | Límite de una llamada a Claude; después se usa la plantilla |
+| `TARIFF_COP_PER_KWH` | `850` | Tarifa para estimar el costo del impacto |
 | `AUTH_SECRET` | secreto de desarrollo (con aviso) | Secreto HMAC de los tokens |
 | `DEMO_USER` / `DEMO_PASSWORD` | `operador@vatio.demo` / `demo` | Credenciales de la demo |
 | `STEP_DELAY_MS` | `450` | Pausa entre pasos del análisis para que la UI muestre el progreso |
@@ -146,27 +148,35 @@ frontend/src/
 
 La técnica es híbrida: la estadística robusta y las reglas de dominio **deciden**, y el LLM **redacta**. El tipo, la severidad, la confianza, la prioridad y cada cifra salen del motor. Claude solo convierte esa evidencia en lenguaje natural.
 
-1. **Lecturas.** Cada lectura se valida contra el propio medidor y cuenta como **inconsistente** si:
-   - es imposible: PF fuera de [0, 1], o 0 V con consumo;
-   - el voltaje se aparta más de ±6 % del habitual del medidor;
-   - el FP salta más de 0,15 frente a sus lecturas vecinas (ventana de 7 h);
-   - la relación `kWh / (V·I·PF)` se aparta más de ±25 % de la propia del medidor **y** de la de sus vecinas.
+1. **Lecturas.** Cada lectura recibe banderas de calidad (se guardan con su hora y se ven en la UI):
+   - `DQ_RANGE`: imposible, PF fuera de [0, 1] o 0 V con consumo;
+   - `DQ_VOLTAGE`: voltaje fuera de la banda 209–231 V (220 V ± 5 %);
+   - `DQ_JUMP`: salto de voltaje de más de 15 V entre horas seguidas;
+   - `DQ_PF_JUMP`: el FP se aparta más de 0,15 de la mediana de sus vecinas (ventana de 7 h);
+   - `DQ_PHYSICS`: la relación `k = kWh / (V·I·PF/1000)` se aparta más de ±25 % de la propia del medidor **y** de la de sus vecinas.
 
-   La última condición es la clave: un cambio de régimen sostenido, como el de M-109, no se confunde con un error de datos.
+   La última condición es la clave: un cambio de régimen sostenido, como el de M-109, no se confunde con un error de datos. El inicio del problema es la primera hora con al menos 3 lecturas marcadas en 24 h, y la severidad es alta si más del 10 % de las lecturas de alguna ventana de 24 h quedan marcadas. La columna `status` del CSV se ignora.
 2. **Baseline.** Mediana por hora del día de los días 1–7, más la MAD, sobre lecturas plausibles. Su suma es el **consumo esperado de un día**.
 3. **Estado actual.** Consumo de las **últimas 24 h** frente al baseline diario. Es la cifra del ejemplo de la prueba («M-109 · 2.180 kWh · baseline ≈ 1.070 · +103,7 %»).
 4. **Detección.** A partir del día 8, la desviación de cada hora contra su hora del baseline. Un **episodio** es una racha de al menos 6 h fuera de ±25 % (se toleran huecos de 2 h), con inicio, fin y recuperación. Así se detectan cambios que empiezan a mitad de semana (M-104 el día 11, M-109 el día 12) y paradas cortas (M-106, 12 h), que un promedio semanal diluiría. También se calculan picos por z-score robusto (> 3,5) y el patrón nocturno.
 5. **Correlación eléctrica.** Corriente, voltaje, PF y la relación `kWh / (V·I·PF)`, comparando el baseline con la ventana del episodio.
-6. **Eventos.** Se cruza cada episodio con los eventos a ±24 h de su inicio, y el evento solo cuenta si su dirección es coherente: arranque o cambio operativo ↔ aumento, parada ↔ caída.
-   - Un registro `UNKNOWN` («No operational event reported») **no explica** nada.
-   - Un registro `DATA_QUALITY` refuerza la evidencia de medición.
+6. **Eventos.** Cada evento tiene una categoría derivada de su tipo: `EXPLANATORY` (arranques, cambios operativos, paradas), `NON_EXPLANATORY` (`UNKNOWN`) o `INFORMATIONAL` (`DATA_QUALITY`). Un evento explica un episodio solo si:
+   - es `EXPLANATORY`;
+   - está a ±3 h del punto de cambio;
+   - su efecto esperado coincide con la dirección del cambio (arranque ↔ aumento, parada ↔ caída);
+   - si anuncia una duración («12 hours»), el episodio dura eso ±2 h.
+
+   Un `UNKNOWN` **no explica** nada y un `DATA_QUALITY` solo corrobora; la clasificación nunca depende de su texto. La UI muestra cada evento evaluado con la razón.
 7. **Clasificación.** El árbol de decisión aplica un orden fijo:
    1. **Calidad de datos**: ≥ 5 lecturas inconsistentes → `DATA_QUALITY`.
    2. **Evento coherente**: si es una parada y el consumo se recupera → `FALSE_POSITIVE`/`LOW`; si no → `EXPLAINABLE_ANOMALY`/`MEDIUM`.
    3. **Magnitud**: `REAL_ANOMALY`, con severidad `HIGH` si el desvío es > 50 % o hay señales eléctricas.
-8. **Prioridad y confianza.**
-   - `prioridad = peso(severidad) × magnitud × persistencia(h / 48) × (1 − 0,8 si un evento lo explica)`.
-   - `confianza = clamp(0,5 + 0,07·señales + 0,2·fuerza, 0,5, 0,97)`.
+8. **Confianza, impacto y prioridad.**
+   - `confianza = 0,35·magnitud + 0,25·persistencia + 0,25·variables que coinciden + 0,15·coherencia con eventos`, con tope 0,97. Cada componente se guarda con su detalle y la UI lo muestra como barra apilada.
+   - **Impacto**: kWh extra por día y por mes, costo a la tarifa configurada y potencia reactiva (`tan(acos(FP))`, límite 0,5).
+   - **Proyección 24 h**: perfil por hora del baseline × nivel observado desde el cambio (estacional ingenuo).
+   - `prioridad = peso(severidad) × confianza × impacto normalizado`. Para calidad de datos el impacto es `0,5 + fracción de lecturas marcadas`.
+   - El estado del medidor sale del análisis: falso positivo → `OK`, anomalía real alta → `CRITICAL`, el resto → `ALERT`.
 
 El orden importa. Un medidor con lecturas inconsistentes no se confunde con un cambio de carga, y un evento coherente descarta la alarma antes de asignar severidad.
 
@@ -174,7 +184,8 @@ Los umbrales están en `analysis.DefaultConfig()` y el reporte los muestra en su
 
 ### IA y explicabilidad (Claude)
 
-- `explain.Claude` llama a la Messages API con **tool use forzado** (`report_explanation`). La salida es estructurada (`reason`, `recommended_action`, `next_steps`) y no hay texto libre que parsear.
+- `explain.Claude` llama a la Messages API con **tool use forzado** (`report_explanation`). La salida es estructurada (`reason`, `evidence_summary`, `recommended_action`, `next_steps`) y no hay texto libre que parsear.
+- Las explicaciones se piden en paralelo, con un límite de `LLM_TIMEOUT_MS` cada una, y se guardan en caché por un hash de la evidencia: repetir el análisis con los mismos datos no vuelve a llamar a Claude.
 - **Validación de grounding:** cada número que cita Claude debe existir en la evidencia del motor. Si una cifra no coincide (`ErrUngrounded`), o si la API falla, `WithFallback` usa la plantilla determinista y lo registra. La UI indica si la explicación la redactó Claude o la plantilla del motor.
 - Claude **no** cambia tipo, severidad ni cifras.
 - La salida de cada anomalía sigue el formato pedido (`meter_id`, `anomaly`, `type`, `severity`, `confidence`, `reason`, `recommended_action`). Se puede ver en Investigación → «VER JSON».
@@ -187,24 +198,31 @@ Todas las rutas van bajo `/api` y requieren `Authorization: Bearer <token>`, exc
 
 | API mínima sugerida | Implementación | Notas |
 |---|---|---|
-| `GET /meters` | `GET /api/meters?status=&q=&sort=` | `status`: `OK` / `ALERT` / `CRITICAL`; `q`: `meter_id`; `sort`: `severity` / `consumption` / `variation` |
+| `GET /meters` | `GET /api/meters?status=&q=&sort=&order=` | `status`: `OK` / `ALERT` / `CRITICAL`; `q`: `meter_id`; `sort`: `severity` / `consumption` / `variation`; `order`: `desc` / `asc` |
 | `GET /meters/:meterId` | `GET /api/meters/{meterId}` | Resumen, estadísticas, eventos y hallazgo IA |
-| `GET /meters/:meterId/readings` | `GET /api/meters/{meterId}/readings?bucket=hour\|day` | 336 lecturas horarias o 14 puntos diarios |
+| `GET /meters/:meterId/readings` | `GET /api/meters/{meterId}/readings?resolution=raw\|day&from=&to=` | 336 lecturas horarias o 14 puntos diarios; `from`/`to` en RFC 3339 o `YYYY-MM-DD` (`bucket` sigue aceptado) |
 | `GET /anomalies` | `GET /api/anomalies?type=&severity=` | Ordenadas por prioridad |
 | `GET /anomalies/:id` | `GET /api/anomalies/{id}` | Con serie diaria y perfil horario |
-| `POST /ai/analyze` | `POST /api/ai/analyze` | `202` + `Location`; corre en segundo plano |
+| `POST /ai/analyze` | `POST /api/ai/analyze` | `202` + `Location`; corre en segundo plano. Si ya hay uno en curso devuelve ese mismo (`202`) |
 | `GET /ai/analysis/:id` | `GET /api/ai/analysis/{id\|latest}` | Estado de los 7 pasos y resumen |
 | `GET /dashboard/summary` | `GET /api/dashboard/summary` | KPIs y último análisis |
 | — | `PATCH /api/anomalies/{id}` `{status}` | Ciclo de vida: `OPEN → ACKNOWLEDGED → IN_PROGRESS → RESOLVED` |
 | — | `GET /api/meters/{id}/events`, `GET /api/events` | Eventos operativos |
 | — | `GET /api/reports/latest` | Reporte del último análisis |
+| — | `GET /api/dashboard/heatmap` | Desviación diaria de cada medidor contra su baseline |
+| — | `GET /api/meters/{id}/baseline` | Mediana, p10 y p90 por hora, k habitual, banda de voltaje y lecturas marcadas |
+| — | `GET /api/meters/{id}/forecast` | Proyección de 24 h e impacto |
+| — | `POST /api/anomalies/{id}/actions` `{action, note}` | `acknowledge`, `investigate`, `validate`, `resolve`, `dismiss` o `note`; mueve el estado y guarda el historial con el usuario del token |
 | — | `POST /api/auth/login`, `GET /api/health` | Sesión y salud |
+
+Los errores responden `{"error": {"code": "NOT_FOUND|INVALID|CONFLICT|UNAUTHORIZED|INTERNAL", "message": "…"}}`.
 
 **Modelo de datos** (PostgreSQL, migraciones embebidas en el binario):
 
 - `meters`, `readings` (PK `meter_id, ts`), `events`.
-- `analysis_runs` (pasos y resumen en JSONB).
-- `anomalies` (evidencia y próximos pasos en JSONB).
+- `analysis_runs` (pasos con duración y resumen en JSONB).
+- `anomalies` (evidencia, próximos pasos y `details`: desglose de confianza, impacto, punto de cambio, en JSONB).
+- `anomaly_actions` (historial de acciones con nota, usuario y estado resultante).
 
 ---
 
@@ -212,11 +230,11 @@ Todas las rutas van bajo `/api` y requieren `Authorization: Bearer <token>`, exc
 
 | Pantalla | Qué responde |
 |---|---|
-| **Operación** (dashboard) | ¿Qué está pasando? KPIs, medidores agrupados por zona, foco con la explicación, pila de alarmas IA con su ciclo de vida, y carga total más eventos |
+| **Operación** (dashboard) | ¿Qué está pasando? KPIs, medidores agrupados por zona, foco con la explicación, pila de alarmas IA con su ciclo de vida, carga total más eventos y un mapa de calor medidor × día de la desviación contra el baseline |
 | **Medidores** | Filtros (todos, normales, alertas, críticas), búsqueda por `meter_id`, orden por consumo, variación o severidad, y sparkline de 14 días |
 | **Detalle** | Consumo actual contra baseline, variación, estado, histórico diario y horario, voltaje, corriente, PF, calidad de datos y veredicto IA |
-| **Anomalías IA** | Tipo, severidad, confianza, razón, estado y acción, con filtros por tipo y severidad |
-| **Investigación** | Qué encontró la IA, las variables que cambiaron, la comparación contra el baseline (diaria, horaria o eléctrica), la evidencia, los eventos relacionados, la acción y el JSON |
+| **Anomalías IA** | Tipo, severidad, confianza (Alta / Media / Baja y valor), razón, estado y acción, con filtros por tipo y severidad |
+| **Investigación** | Qué encontró la IA y su evidencia; comparación contra el baseline: diaria, serie horaria con banda p10–p90, punto de cambio, eventos y proyección de 24 h, perfil horario y paneles de voltaje (209–231 V), corriente y FP (0,9); diagnóstico con k en el tiempo, corriente vs. consumo antes/después y energía acumulada real vs. esperada; eventos evaluados con la razón; desglose de la confianza; impacto (kWh, COP, reactiva); acciones con nota e historial; JSON |
 | **Reporte IA** | Resumen ejecutivo, las 6 preguntas de la prueba, fichas de evidencia, plan de acción con checklist, anexos de metodología y trazabilidad. Vistas Completo y Ejecutivo; se exporta a PDF con la impresión del navegador |
 
 **Run AI Analysis** está siempre en el header. La tira de progreso muestra los 7 pasos (Lecturas → Baseline → Detección → Correlación → Eventos → Explicación → Recomendación) con el resultado de cada uno, y termina en «4 anomalías detectadas · 2 requieren atención prioritaria».
@@ -231,13 +249,14 @@ make lint        # go vet, gofmt, oxlint, tsc
 ```
 
 - **Backend** (`go test -race ./...`):
-  - Motor: los 4 casos, el orden de prioridad y que no haya falsos positivos, sobre los CSV oficiales y sobre el dataset sintético; eventos `UNKNOWN`; estadística.
+  - Motor: los 4 casos, el orden de prioridad y que no haya falsos positivos, sobre los CSV oficiales y sobre el dataset sintético; puntos de cambio (M-109 12/09 14:00, M-104 11/09 00:00, M-106 08/09 00:00–12:00); M-112 detectado sin eventos; banderas de calidad; duración de paradas; desglose de confianza e impacto; eventos `UNKNOWN`; estadística.
   - Explainer: mock HTTP de la API de Anthropic, rechazo de cifras no sustentadas y fallback.
-  - Servicios, HTTP (auth, filtros, flujo de análisis, 404/409), CSV y dominio.
+  - Explainer: caché por evidencia, timeout y resumen de evidencia de la plantilla.
+  - Servicios, HTTP (auth, filtros, orden, ventana de lecturas, formato de error, heatmap, baseline, proyección, acciones con el usuario del token, análisis en curso), CSV y dominio.
   - PostgreSQL: integración cuando existe `TEST_DATABASE_URL`; en CI corre con un servicio Postgres.
 - **Frontend** (Vitest + Testing Library):
   - Formato es-CO, ciclo de vida, veredictos, geometría de gráficas, agrupación por zonas y narrativa del reporte.
-  - Componentes: filtros, búsqueda y orden de Medidores contra la API; la tira del análisis; el polling hasta completar y la invalidación; login y rutas protegidas; Investigación con JSON.
+  - Componentes: filtros, búsqueda y orden de Medidores contra la API; la tira del análisis; el polling hasta completar y la invalidación; login y rutas protegidas; Investigación (gráficas, desglose, impacto, acciones con nota, lecturas marcadas de M-112); mapa de calor; veredicto de cada evento.
   - Los fixtures son respuestas reales de la API.
 
 CI (GitHub Actions) ejecuta lint, tests y build de ambos proyectos y construye las imágenes Docker.
@@ -259,10 +278,26 @@ CI (GitHub Actions) ejecuta lint, tests y build de ambos proyectos y construye l
 - La API no se publica en Docker; solo es accesible a través de nginx.
 - nginx añade cabeceras de seguridad y la imagen de la API es distroless y no root.
 
+## Guion de demo (5 min)
+
+1. **Login** (`operador@vatio.demo` / `demo`) → Operación.
+2. **Run AI Analysis**: la tira muestra los 7 pasos con su resultado y el tiempo de cómputo de cada uno; termina en «4 anomalías · 2 prioritarias».
+3. **Mapa de calor**: M-109 en rojo desde D12, M-104 desde D11, M-106 azul solo en D8, M-112 con puntos violeta en D13–D14.
+4. **P1 M-109** → Investigación: serie horaria fuera de la banda p10–p90 desde el 12/09 14:00, corriente ×2, FP 0,94 → 0,74, el evento `UNKNOWN` descartado con su razón, impacto ≈ 35.000 kWh/mes y reactiva sobre el límite. Registrar «Investigar» con una nota.
+5. **P2 M-112**: k en el tiempo con los puntos rojos fuera de la banda y los saltos de voltaje: es un problema de medición, no de consumo.
+6. **P3 M-104** y **P4 M-106**: el evento explica el cambio (dirección y, para la parada, duración de 12 h).
+7. **Reporte IA**: resumen ejecutivo, las preguntas de la prueba, fichas y plan de acción; exportar a PDF.
+
 ## Decisiones y límites
 
 - **Motor determinista + LLM redactor** en lugar de un LLM que clasifica. Es reproducible, auditable y barato, y la IA aporta la explicación sin inventar cifras.
 - **Ejecución asíncrona** del análisis, con estado por pasos persistido: la UI hace polling cada 400 ms.
+- **Desviaciones del plan de implementación** (documentadas):
+  - No se usa CUSUM: el punto de cambio es el inicio del episodio horario (≥ 6 h fuera de ±25 %), que en los dos datasets coincide con la hora exacta del cambio.
+  - No se implementa la regla `DQ_STUCK` (lecturas repetidas): en los CSV oficiales marcaba a los 12 medidores.
+  - La ventana de eventos es ±3 h del punto de cambio (en lugar de ±24 h del inicio del día) y la de duración ±2 h.
+  - La banda de `k` es relativa (±25 %) y exige apartarse de la propia **y** de la local, para no confundir un cambio de régimen con un error.
+  - El streaming (fase 7) vive en una copia aparte, `bia-energy-live`, para no afectar la entrega principal; allí el motor por lotes se vuelve a ejecutar sobre la ventana creciente en vez de un `Update` incremental.
 - **Límites**:
   - Con 14 días de datos, el baseline usa 7 y no captura estacionalidad semanal.
   - Los eventos vienen en inglés y se citan tal como fueron registrados; Claude los traduce al redactar.
