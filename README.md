@@ -48,7 +48,7 @@ De pago, con las imágenes separadas:
 - **Railway**: un servicio por Dockerfile, configurado con `backend/railway.toml` y `frontend/railway.toml`, más PostgreSQL gestionado. En el servicio web, `API_UPSTREAM=api.railway.internal:8080`.
 - **VPS**: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`. Añade Caddy con HTTPS automático para el `DOMAIN` definido en `.env`.
 
-`GET /api/health` indica qué motor de explicaciones está activo (`"ai":"claude:<modelo>"` o `"template"`).
+`GET /api/health` indica qué motor de explicaciones está activo (`"ai":"claude:<modelo>"` o `"template"`) y qué almacenamiento (`"store":"postgres"` o `"memory"`).
 
 ### Probar la conexión con Claude
 
@@ -239,7 +239,10 @@ Los errores responden `{"error": {"code": "NOT_FOUND|INVALID|CONFLICT|UNAUTHORIZ
 | **Detalle** | Consumo actual contra baseline, variación, estado, histórico diario y horario, voltaje, corriente, PF, calidad de datos y veredicto IA |
 | **Anomalías IA** | Tipo, severidad, confianza (Alta / Media / Baja y valor), razón, estado y acción, con filtros por tipo y severidad |
 | **Investigación** | Qué encontró la IA y su evidencia; comparación contra el baseline: diaria, serie horaria con banda p10–p90, punto de cambio, eventos y proyección de 24 h, perfil horario y paneles de voltaje (209–231 V), corriente y FP (0,9); diagnóstico con k en el tiempo, corriente vs. consumo antes/después y energía acumulada real vs. esperada; eventos evaluados con la razón; desglose de la confianza; impacto (kWh, COP, reactiva); acciones con nota e historial; JSON |
+| **Dev mode** (`/dev`, pública, enlazada desde el login y el menú de usuario) | La arquitectura: puertos y adaptadores con los que este despliegue está corriendo (según `/api/health`), los 7 pasos, quién decide qué, paquetes, API, seguridad y despliegue |
 | **Reporte IA** | Resumen ejecutivo, las 6 preguntas de la prueba, fichas de evidencia, plan de acción con checklist, anexos de metodología y trazabilidad. Vistas Completo y Ejecutivo; se exporta a PDF con la impresión del navegador |
+
+**Sesión**: el avatar abre un menú con el usuario, el enlace a Dev mode y **Cerrar sesión**. Al cerrar sesión (o si el token expira) se limpia la caché del cliente y el login lo confirma; los análisis viven en el servidor, así que al volver a entrar se ve el último y se puede ejecutar otro.
 
 **Run AI Analysis** está siempre en el header. La tira de progreso muestra los 7 pasos (Lecturas → Baseline → Detección → Correlación → Eventos → Explicación → Recomendación) con el resultado de cada uno, y termina en «4 anomalías detectadas · 2 requieren atención prioritaria».
 

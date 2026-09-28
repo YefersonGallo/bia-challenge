@@ -108,7 +108,11 @@ func run(log *slog.Logger) error {
 		secret = "dev-secret-change-me"
 		log.Warn("AUTH_SECRET not set: using an insecure development secret")
 	}
-	handler := httpapi.New(svc, httpapi.Config{AIProvider: aiProvider, StaticDir: os.Getenv("STATIC_DIR"),
+	storeKind := "memory"
+	if _, ok := store.(*postgres.Store); ok {
+		storeKind = "postgres"
+	}
+	handler := httpapi.New(svc, httpapi.Config{AIProvider: aiProvider, StoreKind: storeKind, StaticDir: os.Getenv("STATIC_DIR"),
 		Auth:       httpapi.Auth{Secret: []byte(secret), User: env("DEMO_USER", "operador@vatio.demo"), Password: env("DEMO_PASSWORD", "demo"), TTL: 12 * time.Hour},
 		CORSOrigin: os.Getenv("CORS_ORIGIN"),
 		Logger:     log,

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useLogin } from '@/shared/api/queries'
 import { Lamp } from '@/shared/ui/primitives'
 import { useAuthStore } from './authStore'
@@ -15,6 +15,7 @@ const FLOW = ['DATOS', 'ANÁLISIS', 'ANOMALÍA', 'EXPLICACIÓN', 'PRIORIZACIÓN'
 export function LoginPage() {
   const token = useAuthStore((s) => s.token)
   const setSession = useAuthStore((s) => s.login)
+  const notice = useAuthStore((s) => s.notice)
   const navigate = useNavigate()
   const location = useLocation()
   const login = useLogin()
@@ -88,6 +89,11 @@ export function LoginPage() {
           <span className="font-mono text-[11px] tracking-[0.1em] text-muted">CENTRO DE CONTROL · PLANTA DEMO</span>
           <h2 className="m-0 font-display text-3xl font-semibold tracking-[-0.02em]">Iniciar sesión</h2>
         </div>
+        {notice && (
+          <span role="status" className="rounded border border-line-2 bg-bg px-3.5 py-2.5 text-[13px] text-ink-2">
+            {notice === 'expired' ? 'Tu sesión expiró. Vuelve a entrar para continuar.' : 'Sesión cerrada. El último análisis queda guardado y lo verás al volver a entrar.'}
+          </span>
+        )}
         <label className="flex flex-col gap-1.5 font-mono text-[11px] tracking-[0.08em] text-muted">
           CORREO
           <input
@@ -123,7 +129,12 @@ export function LoginPage() {
         >
           {login.isPending ? 'ENTRANDO…' : 'ENTRAR'}
         </button>
-        <span className="font-mono text-[11px] text-muted">Demo · operador@vatio.demo / demo</span>
+        <span className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-muted">
+          <span>Demo · operador@vatio.demo</span>
+          <Link to="/dev" className="text-accent no-underline hover:underline">
+            DEV MODE · ARQUITECTURA →
+          </Link>
+        </span>
       </form>
     </div>
   )
