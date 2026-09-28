@@ -6,6 +6,7 @@ import { applyAlert, applySnapshot, applyTick, initialLive, RECENT, sortedAlerts
 import { LivePage } from './LivePage'
 import { LiveIndicator, LiveToasts } from './LiveWidgets'
 import { useLiveStream } from './useLiveStream'
+import { BEFORE_PRINT } from '@/shared/lib/print'
 import type { AlertChange, LiveAlert, LivePoint, LiveState, Snapshot, Tick } from './types'
 
 const state = (over: Partial<LiveState> = {}): LiveState => ({
@@ -168,6 +169,36 @@ describe('useLiveStream', () => {
     expect(FakeEventSource.last.url).not.toContain('session')
     unmount()
     expect(FakeEventSource.last.closed).toBe(true)
+    vi.unstubAllGlobals()
+    useAuthStore.setState({ token: null, user: null })
+  })
+
+  it('closes the stream while printing and resumes it afterwards', async () => {
+    mockApi({ 'POST /stream/token': { token: 'st', expires_at: '2026-09-26T10:01:00Z' } })
+    vi.stubGlobal('EventSource', FakeEventSource)
+    useLiveStore.setState(initialLive)
+    useAuthStore.setState({ token: 'session', user: { email: 'u', name: 'U' } })
+    const { unmount } = renderWithProviders(<Harness />)
+    await waitFor(() => expect(FakeEventSource.last?.url).toBe('/api/stream?token=st'))
+    const es = FakeEventSource.last
+    act(() => es.emit('snapshot', snapshot, '100'))
+
+    // Safari does not print while a request is open: the stream closes first…
+    act(() => {
+      window.dispatchEvent(new Event(BEFORE_PRINT))
+    })
+    expect(es.closed).toBe(true)
+    act(() => es.onerror?.()) // a late error must not reopen it mid-print
+    await new Promise((r) => setTimeout(r, 50))
+    expect(FakeEventSource.last).toBe(es)
+
+    // …and comes back after printing, from the last id seen.
+    act(() => {
+      window.dispatchEvent(new Event('afterprint'))
+    })
+    await waitFor(() => expect(FakeEventSource.last).not.toBe(es))
+    expect(FakeEventSource.last.url).toBe('/api/stream?token=st&last_event_id=100')
+    unmount()
     vi.unstubAllGlobals()
     useAuthStore.setState({ token: null, user: null })
   })

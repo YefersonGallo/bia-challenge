@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { api, API_BASE } from '@/shared/api/client'
 import { useAuthStore } from '@/features/auth/authStore'
+import { BEFORE_PRINT } from '@/shared/lib/print'
 import { useLiveStore } from './liveStore'
 import type { AlertChange, LiveControl, LiveState, Snapshot, Tick } from './types'
 
@@ -15,6 +16,9 @@ export const RETRY_MS = 2000
  * session token, so each (re)connection asks for a fresh one and reopens the
  * stream with `last_event_id`: the server replays only what was missed, or sends
  * a new snapshot when that is no longer possible.
+ *
+ * While the page prints the stream is closed (Safari does not print with an open
+ * request) and it resumes on `afterprint` from the last id seen.
  */
 export function useLiveStream() {
   const token = useAuthStore((s) => s.token)
@@ -24,8 +28,11 @@ export function useLiveStream() {
     let retry: ReturnType<typeof setTimeout> | undefined
     let lastId = ''
     let stopped = false
+    let suspended = false // closed for printing
+    let fallback: ReturnType<typeof setTimeout> | undefined
 
     const connect = async () => {
+      if (stopped || suspended) return
       const live = useLiveStore.getState()
       live.setConnection(lastId ? 'reconnecting' : 'connecting')
       let streamToken: string
@@ -35,7 +42,7 @@ export function useLiveStream() {
         if (!stopped) retry = setTimeout(connect, RETRY_MS)
         return
       }
-      if (stopped) return
+      if (stopped || suspended) return
       const qs = new URLSearchParams({ token: streamToken })
       if (lastId) qs.set('last_event_id', lastId)
       es = new EventSource(`${API_BASE}/stream?${qs}`)
@@ -54,7 +61,7 @@ export function useLiveStream() {
         // The stream token is single-use in practice (it expires in a minute):
         // close and reconnect with a new one instead of letting EventSource retry.
         es?.close()
-        if (stopped) return
+        if (stopped || suspended) return
         useLiveStore.getState().setConnection('reconnecting')
         retry = setTimeout(connect, RETRY_MS)
       }
@@ -64,9 +71,30 @@ export function useLiveStream() {
       on<LiveState>('control', (s) => useLiveStore.getState().control(s))
     }
 
+    const suspend = () => {
+      suspended = true
+      clearTimeout(retry)
+      es?.close()
+      es = null
+      // afterprint normally reopens it; this covers browsers that never fire it.
+      clearTimeout(fallback)
+      fallback = setTimeout(resume, 60_000)
+    }
+    const resume = () => {
+      if (!suspended) return
+      suspended = false
+      clearTimeout(fallback)
+      void connect()
+    }
+    window.addEventListener(BEFORE_PRINT, suspend)
+    window.addEventListener('afterprint', resume)
+
     void connect()
     return () => {
       stopped = true
+      window.removeEventListener(BEFORE_PRINT, suspend)
+      window.removeEventListener('afterprint', resume)
+      clearTimeout(fallback)
       clearTimeout(retry)
       es?.close()
       useLiveStore.getState().setConnection('idle')
