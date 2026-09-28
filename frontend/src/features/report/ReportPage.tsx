@@ -5,6 +5,7 @@ import type { Report } from '@/shared/api/types'
 import { fmtConf, fmtDateTime, fmtNum, fmtPct } from '@/shared/lib/format'
 import { priorityTag, SEVERITY_LABEL, TYPE_META } from '@/shared/lib/labels'
 import { Button, EmptyState, ErrorBox, Label, Loading, Segmented } from '@/shared/ui/primitives'
+import { printPage } from '@/shared/lib/print'
 import { useAnalysis } from '@/features/analysis/useAnalysis'
 import { FindingCard } from './FindingCard'
 import { classificationHeadline, consumptionHeadline, executiveSummary } from './narrative'
@@ -367,7 +368,7 @@ export function ReportPage() {
             <input type="checkbox" checked={review.reviewed} onChange={(e) => review.setReviewed(e.target.checked)} />
             Marcar como revisado
           </label>
-          <Button onClick={() => window.print()}>EXPORTAR PDF</Button>
+          <Button onClick={printPage}>EXPORTAR PDF</Button>
         </div>
       </aside>
       <div className="min-h-0 overflow-y-auto bg-[#e9eaee] py-6 print:overflow-visible print:bg-white print:py-0">

@@ -20,7 +20,7 @@ export function FocusPanel({ meterId, onClose }: { meterId: string; onClose: () 
   const signals = f?.evidence.signals ?? []
 
   return (
-    <section aria-label={`Foco ${m.id}`} className="flex min-h-0 flex-1 flex-col rounded-md border bg-panel" style={{ borderColor: v.color }}>
+    <section aria-label={`Foco ${m.id}`} className="flex shrink-0 flex-col rounded-md border bg-panel" style={{ borderColor: v.color }}>
       <header className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-2.5">
         <Label>FOCO</Label>
         <span className="font-mono text-base font-semibold">{m.id}</span>
@@ -41,8 +41,10 @@ export function FocusPanel({ meterId, onClose }: { meterId: string; onClose: () 
           ×
         </button>
       </header>
-      <div className="grid flex-1 gap-5 px-4 py-3.5 xl:grid-cols-[minmax(0,430px)_minmax(0,1fr)_220px]">
-        <div className="flex flex-col gap-1.5">
+      {/* Wide screens: chart | why | electrical. Otherwise the explanation, which can be
+          long when Claude writes it, takes the full width below chart and electrical. */}
+      <div className="grid gap-5 px-4 py-3.5 md:grid-cols-[minmax(0,1fr)_220px] 2xl:grid-cols-[minmax(0,430px)_minmax(0,1fr)_220px]">
+        <div className="flex w-full max-w-[600px] flex-col gap-1.5">
           <Label>KWH/DÍA · 14 DÍAS · BANDA = BASELINE ±10%</Label>
           <DailyChart
             days={m.stats.days}
@@ -53,7 +55,7 @@ export function FocusPanel({ meterId, onClose }: { meterId: string; onClose: () 
             height={160}
           />
         </div>
-        <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2 md:col-span-2 md:row-start-2 2xl:col-span-1 2xl:col-start-2 2xl:row-start-1">
           <Label>{f ? `POR QUÉ · ${f.explained_by === 'claude' ? 'REDACTADO POR CLAUDE' : 'MOTOR DE ANÁLISIS'}` : 'REGLA'}</Label>
           <p className="m-0 text-[15px] text-white">{f?.reason ?? (m.status === 'OK' ? 'Consumo dentro de la banda del baseline.' : `Regla activada: ${m.status_reason}.`)}</p>
           {signals.slice(0, 4).map((s) => (
@@ -66,7 +68,7 @@ export function FocusPanel({ meterId, onClose }: { meterId: string; onClose: () 
           ))}
           {!f && m.status !== 'OK' && <span className="text-xs text-muted">Ejecuta el análisis IA para saber si es real, explicable o un problema de datos.</span>}
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 md:col-start-2 md:row-start-1 2xl:col-start-3">
           {electricalRows(m.stats).map((e) => (
             <div key={e.label} className="flex items-baseline justify-between border-b border-line pb-1.5">
               <span className="font-mono text-[10px] text-muted">{e.label}</span>
