@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { useReport } from '@/shared/api/queries'
+import { useReport, useSummary } from '@/shared/api/queries'
 import type { Report } from '@/shared/api/types'
 import { fmtConf, fmtDateTime, fmtNum, fmtPct } from '@/shared/lib/format'
 import { priorityTag, SEVERITY_LABEL, TYPE_META } from '@/shared/lib/labels'
@@ -105,6 +105,7 @@ function Contributions({ r }: { r: Report }) {
 
 function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: ReturnType<typeof useReportReview> }) {
   const exec = mode === 'exec'
+  const days = useSummary().data?.period_days || 14 // grows when readings are imported
   const sec = (id: string) => SECTIONS.find((s) => s.id === id)!
   const okMeters = r.summary.meters - r.rule_flags.length
   const steps = r.plan.flatMap((p) => (p.steps ?? []).map((s, i) => ({ key: `${p.meter_id}-${i}`, text: s, p })))
@@ -114,7 +115,7 @@ function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: Return
       <header className="flex flex-col gap-2">
         <span className="font-display text-xl font-bold">Vatio</span>
         <span className="font-mono text-[11px] tracking-[0.08em] text-paper-muted">
-          REPORTE DE ANÁLISIS IA · #{r.run_id} · PLANTA DEMO · DÍAS 1–14 · GENERADO {fmtDateTime(r.generated_at).toUpperCase()}
+          REPORTE DE ANÁLISIS IA · #{r.run_id} · PLANTA DEMO · DÍAS 1–{days} · GENERADO {fmtDateTime(r.generated_at).toUpperCase()}
         </span>
       </header>
 
