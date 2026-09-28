@@ -6,7 +6,7 @@ import { LoginPage } from './LoginPage'
 import { RequireAuth } from './RequireAuth'
 
 describe('authentication', () => {
-  beforeEach(() => useAuthStore.setState({ token: null, user: null }))
+  beforeEach(() => useAuthStore.setState({ token: null, user: null, notice: null }))
 
   it('logs in and stores the session', async () => {
     const { calls } = mockApi({
@@ -37,5 +37,24 @@ describe('authentication', () => {
     )
     expect(screen.queryByText('privado')).not.toBeInTheDocument()
     expect(screen.getByTestId('elsewhere')).toBeInTheDocument()
+  })
+
+  it('confirms an explicit logout and links to dev mode', () => {
+    useAuthStore.setState({ notice: 'user' })
+    renderWithProviders(<LoginPage />)
+    expect(screen.getByRole('status')).toHaveTextContent('Sesión cerrada')
+    expect(screen.getByRole('link', { name: /DEV MODE/ })).toHaveAttribute('href', '/dev')
+  })
+
+  it('explains an expired session', () => {
+    useAuthStore.setState({ notice: 'expired' })
+    renderWithProviders(<LoginPage />)
+    expect(screen.getByRole('status')).toHaveTextContent('Tu sesión expiró')
+  })
+
+  it('clears the notice on the next login', () => {
+    useAuthStore.setState({ notice: 'user' })
+    useAuthStore.getState().login('tok', { email: 'a@b.c', name: 'A' })
+    expect(useAuthStore.getState().notice).toBeNull()
   })
 })

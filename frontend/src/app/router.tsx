@@ -8,11 +8,14 @@ import { AnomaliesPage } from '@/features/anomalies/AnomaliesPage'
 import { InvestigationPage } from '@/features/anomalies/InvestigationPage'
 import { ReportPage } from '@/features/report/ReportPage'
 import { LivePage } from '@/features/live/LivePage'
+import { DevPage } from '@/features/dev/DevPage'
 import { AppShell } from './AppShell'
 
 /** Route table: Operación → Medidores → Detalle → Anomalías IA → Investigación → Reporte → En vivo. */
 export const routes = [
   { path: '/login', element: <LoginPage /> },
+  // Public: the architecture page is reachable from the login screen.
+  { path: '/dev', element: <DevPage /> },
   {
     path: '/',
     element: (

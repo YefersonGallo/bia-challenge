@@ -2,12 +2,12 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAnomalies, useSummary, useUpdateAnomaly } from '@/shared/api/queries'
 import { fmtConf, fmtNum, fmtPct, fmtTime } from '@/shared/lib/format'
 import { cx } from '@/shared/lib/cx'
-import { useAuthStore } from '@/features/auth/authStore'
 import { AnalysisStrip } from '@/features/analysis/AnalysisStrip'
 import { useAnalysisUi } from '@/features/analysis/analysisStore'
 import { useAnalysis } from '@/features/analysis/useAnalysis'
 import { LiveIndicator, LiveToasts } from '@/features/live/LiveWidgets'
 import { useLiveStream } from '@/features/live/useLiveStream'
+import { UserMenu } from './UserMenu'
 
 function HeaderKpis() {
   const { data: s } = useSummary()
@@ -70,8 +70,6 @@ export function AppShell() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { data: summary } = useSummary()
-  const user = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
   const { stripOpen, close } = useAnalysisUi()
   const { run, running, start, startError } = useAnalysis()
   useLiveStream()
@@ -85,12 +83,6 @@ export function AppShell() {
   ]
   const last = summary?.last_analysis
   const aiText = running ? 'IA · analizando…' : last ? `IA · ${fmtTime(last.finished_at ?? last.started_at)}` : 'IA · sin análisis'
-  const initials = (user?.name ?? 'OP')
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 
   return (
     <div className="flex h-full flex-col overflow-hidden print:block print:h-auto print:overflow-visible">
@@ -128,15 +120,7 @@ export function AppShell() {
           <button type="button" onClick={start} disabled={running} className="h-[34px] rounded bg-ink px-3.5 text-[11px] font-semibold text-bg disabled:opacity-60">
             {running ? 'ANALIZANDO…' : 'RUN AI ANALYSIS'}
           </button>
-          <button
-            type="button"
-            onClick={logout}
-            title={`Cerrar sesión (${user?.email ?? ''})`}
-            aria-label="Cerrar sesión"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-line text-[11px] font-semibold text-ink"
-          >
-            {initials}
-          </button>
+          <UserMenu />
         </div>
       </header>
       {stripOpen && run && (

@@ -6,6 +6,7 @@ interface AnalysisUiState {
   stripOpen: boolean
   follow: (runId: string) => void
   close: () => void
+  reset: () => void
 }
 
 export const useAnalysisUi = create<AnalysisUiState>()((set) => ({
@@ -13,4 +14,5 @@ export const useAnalysisUi = create<AnalysisUiState>()((set) => ({
   stripOpen: false,
   follow: (runId) => set({ runId, stripOpen: true }),
   close: () => set({ stripOpen: false }),
+  reset: () => set({ runId: null, stripOpen: false }),
 }))

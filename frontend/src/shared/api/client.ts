@@ -33,7 +33,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init.headers,
     },
   })
-  if (res.status === 401 && token) useAuthStore.getState().logout()
+  if (res.status === 401 && token) useAuthStore.getState().logout('expired')
   const text = await res.text()
   const body = text ? JSON.parse(text) : null
   if (!res.ok) throw toError(res.status, res.statusText, body)

@@ -35,7 +35,7 @@ func setup(t *testing.T) *harness {
 	_ = st.Seed(context.Background(), ds.Meters, ds.Readings, ds.Events)
 	svc := app.New(st, analysis.New(analysis.DefaultConfig()), explain.Template{}, app.Options{})
 	auth := httpapi.Auth{Secret: []byte("test"), User: "operador@vatio.demo", Password: "demo", TTL: time.Hour}
-	hs := &harness{t: t, h: httpapi.New(svc, httpapi.Config{Auth: auth, CORSOrigin: "*"}), svc: svc}
+	hs := &harness{t: t, h: httpapi.New(svc, httpapi.Config{Auth: auth, CORSOrigin: "*", StoreKind: "memory"}), svc: svc}
 	var login struct{ Token string }
 	hs.do("POST", "/api/auth/login", map[string]string{"email": "operador@vatio.demo", "password": "demo"}, http.StatusOK, &login)
 	hs.token = login.Token
@@ -68,7 +68,11 @@ func TestAuthRequired(t *testing.T) {
 	hs := setup(t)
 	hs.token = ""
 	hs.do("GET", "/api/meters", nil, http.StatusUnauthorized, nil)
-	hs.do("GET", "/api/health", nil, http.StatusOK, nil)
+	var health map[string]string
+	hs.do("GET", "/api/health", nil, http.StatusOK, &health)
+	if health["ai"] != "template" || health["store"] != "memory" {
+		t.Fatalf("health = %v", health) // public, for the dev mode page
+	}
 	hs.do("POST", "/api/auth/login", map[string]string{"email": "operador@vatio.demo", "password": "wrong"}, http.StatusUnauthorized, nil)
 }
 
