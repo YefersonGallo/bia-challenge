@@ -19,6 +19,7 @@ import type {
   Reading,
   Report,
   Severity,
+  ImportResult,
 } from './types'
 
 /** Query keys in one place so invalidation stays consistent. */
@@ -215,4 +216,18 @@ export function useStartAnalysis() {
 
 export function useReport() {
   return useQuery({ queryKey: keys.report, queryFn: () => orNull(api<Report>('/reports/latest')) })
+}
+
+// --- data import ----------------------------------------------------------------
+
+/** Sends a readings CSV as is. With dryRun the server only validates it and reports what would change. */
+export function useImportReadings() {
+  const invalidate = useInvalidateDerived()
+  return useMutation({
+    mutationFn: ({ file, dryRun }: { file: Blob; dryRun: boolean }) =>
+      api<ImportResult>(`/data/readings${dryRun ? '?dry_run=true' : ''}`, { method: 'POST', body: file, headers: { 'Content-Type': 'text/csv' } }),
+    onSuccess: (r) => {
+      if (r.applied) void invalidate()
+    },
+  })
 }

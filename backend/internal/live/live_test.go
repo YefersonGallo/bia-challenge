@@ -253,3 +253,28 @@ func TestReplaySpeedMatchesTheNominalOne(t *testing.T) {
 		t.Fatalf("8 simulated hours took %s at 4× (nominal 800 ms)", elapsed)
 	}
 }
+
+// A CSV import reloads the replay: it restarts with the new hours and every client
+// gets a snapshot.
+func TestReloadRestartsWithTheNewReadings(t *testing.T) {
+	f := fixtures(t)[0]
+	hub := live.NewHub(100)
+	r := live.NewRunner(analysis.New(analysis.DefaultConfig()), hub, f.meters, f.readings, f.events, live.Options{})
+	for i := 0; i < 10; i++ {
+		r.Step()
+	}
+	before := r.State()
+	extra := f.readings[len(f.readings)-1]
+	extra.Timestamp = extra.Timestamp.Add(time.Hour)
+	ch, _, _, cancel := hub.Subscribe(0)
+	defer cancel()
+
+	r.Reload(append(append([]domain.Reading(nil), f.readings...), extra))
+	st := r.State()
+	if st.Hour != 0 || st.TotalHours != before.TotalHours+1 {
+		t.Fatalf("after reload: %+v (before %+v)", st, before)
+	}
+	if m := <-ch; m.Kind != "snapshot" {
+		t.Fatalf("first message after reload = %s, want snapshot", m.Kind)
+	}
+}

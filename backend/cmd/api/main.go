@@ -103,7 +103,18 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	svc := app.New(store, engine, explainer, app.Options{StepDelay: time.Duration(delay) * time.Millisecond, Logger: log})
+	svc := app.New(store, engine, explainer, app.Options{StepDelay: time.Duration(delay) * time.Millisecond, Logger: log,
+		// Imported readings reach the live replay too: it restarts with the new data.
+		OnReadingsChanged: func() {
+			rs, err := store.Readings(context.Background())
+			if err != nil {
+				log.Warn("live replay not reloaded", "err", err)
+				return
+			}
+			runner.Reload(rs)
+			log.Info("live replay reloaded", "hours", runner.State().TotalHours)
+		},
+	})
 
 	if err := svc.RecoverInterrupted(ctx); err != nil {
 		log.Warn("could not recover an interrupted analysis", "err", err)

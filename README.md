@@ -253,6 +253,7 @@ Todas las rutas van bajo `/api` y requieren `Authorization: Bearer <token>`, exc
 | — | `PATCH /api/anomalies/{id}` `{status}` | Ciclo de vida: `OPEN → ACKNOWLEDGED → IN_PROGRESS → RESOLVED` |
 | — | `GET /api/meters/{id}/events`, `GET /api/events` | Eventos operativos |
 | — | `GET /api/reports/latest` | Reporte del último análisis |
+| — | `POST /api/data/readings[?dry_run=true]` | Carga de lecturas en CSV (cuerpo `text/csv`, hasta 10 MB): valida y, sin `dry_run`, agrega o reemplaza por medidor y hora |
 | — | `GET /api/dashboard/heatmap` | Desviación diaria de cada medidor contra su baseline |
 | — | `GET /api/meters/{id}/baseline` | Mediana, p10 y p90 por hora, k habitual, banda de voltaje y lecturas marcadas |
 | — | `GET /api/meters/{id}/forecast` | Proyección de 24 h e impacto |
@@ -280,7 +281,8 @@ Los errores responden `{"error": {"code": "NOT_FOUND|INVALID|CONFLICT|UNAUTHORIZ
 | **Anomalías IA** | Tipo, severidad, confianza (Alta / Media / Baja y valor), razón, estado y acción, con filtros por tipo y severidad |
 | **Investigación** | Qué encontró la IA y su evidencia; comparación contra el baseline: diaria, serie horaria con banda p10–p90, punto de cambio, eventos y proyección de 24 h, perfil horario y paneles de voltaje (209–231 V), corriente y FP (0,9); diagnóstico con k en el tiempo, corriente vs. consumo antes/después y energía acumulada real vs. esperada; eventos evaluados con la razón; desglose de la confianza; impacto (kWh, COP, reactiva); acciones con nota e historial; JSON |
 | **Dev mode** (`/dev`, pública, enlazada desde el login y el menú de usuario) | La arquitectura: puertos y adaptadores con los que este despliegue está corriendo (según `/api/health`), los 7 pasos, quién decide qué, paquetes, API, seguridad y despliegue |
-| **Reporte IA** | Resumen ejecutivo, las 6 preguntas de la prueba, fichas de evidencia, plan de acción con checklist, anexos de metodología y trazabilidad. Vistas Completo y Ejecutivo; se exporta a PDF con la impresión del navegador |
+| **Reporte IA** | Resumen ejecutivo, las 6 preguntas de la prueba, fichas de evidencia, plan de acción con checklist, anexos de metodología y trazabilidad. Vistas Completo y Ejecutivo; **Descargar PDF** genera el archivo en el navegador (A4, cortado entre bloques, con pie de página), sin diálogo de impresión |
+| **Cargar lecturas** (menú del usuario, `/data/import`) | Sube un CSV con el formato de `readings.csv` (coma, o punto y coma con coma decimal; `status` opcional). Primero valida y muestra qué cambia (filas, nuevas, reemplazadas, medidores, rango); al confirmar, agrega las nuevas y reemplaza las del mismo medidor y hora. Un error rechaza el archivo entero con la línea y la columna. Después se ofrece ejecutar el análisis |
 
 **Sesión**: el avatar abre un menú con el usuario, el enlace a Dev mode y **Cerrar sesión**. Al cerrar sesión (o si el token expira) se limpia la caché del cliente y el login lo confirma; los análisis viven en el servidor, así que al volver a entrar se ve el último y se puede ejecutar otro.
 

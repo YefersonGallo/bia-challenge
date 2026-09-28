@@ -49,6 +49,7 @@ const ENDPOINTS: [string, string][] = [
   ['POST', '/api/ai/analyze'],
   ['GET', '/api/ai/analysis/{id|latest}'],
   ['GET', '/api/reports/latest'],
+  ['POST', '/api/data/readings?dry_run=true'],
   ['POST', '/api/stream/token'],
   ['GET', '/api/stream?token=…&last_event_id=…'],
   ['GET', '/api/stream/state'],
@@ -148,7 +149,7 @@ export function DevPage() {
               <Box title="Navegador · React SPA" sub="REST sobre /api con token Bearer." />
               <Box title="cmd/analyze" sub="Mismo motor desde la terminal, sin servidor." />
               <Box title="EventSource · SSE" sub="El replay en vivo: lecturas y alertas hora a hora." />
-              <Box title="ingest · CSV" sub="Al arrancar, si el almacenamiento está vacío: medidores, lecturas y eventos." />
+              <Box title="ingest · CSV" sub="Al arrancar, si el almacenamiento está vacío, y cuando el operador carga lecturas (con vista previa antes de guardar)." />
             </div>
             <Arrow />
             <Panel className="flex flex-col gap-2 p-3" accent={ENGINE}>
@@ -266,7 +267,7 @@ export function DevPage() {
               <li>
                 <b className="text-ink">Zustand</b> para el estado del cliente: sesión (persistida), filtros y la tira del análisis.
               </li>
-              <li>Tailwind CSS 4 y gráficos en SVG propio, sin librería de charts.</li>
+              <li>Tailwind CSS 4 y gráficos en SVG propio, sin librería de charts. El PDF del reporte se genera en el navegador (modern-screenshot + jsPDF, cargados solo al descargar).</li>
               <li>Carpetas por feature (operación, medidores, anomalías, reporte) y un shared con API, UI y gráficos.</li>
               <li>Vitest y Testing Library.</li>
             </ul>

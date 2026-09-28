@@ -100,7 +100,17 @@ func NewRunner(engine *analysis.Engine, hub *Hub, meters []domain.Meter, reading
 	if opts.Recent <= 0 {
 		opts.Recent = 48
 	}
-	r := &Runner{engine: engine, hub: hub, opts: opts, meters: meters, events: events, byHour: map[time.Time][]domain.Reading{}, speed: 1, wake: make(chan struct{}, 1)}
+	r := &Runner{engine: engine, hub: hub, opts: opts, meters: meters, events: events, speed: 1, wake: make(chan struct{}, 1)}
+	r.index(readings)
+	r.mu.Lock()
+	r.reset()
+	r.mu.Unlock()
+	return r
+}
+
+// index groups the readings by hour (mu held, or before the runner is shared).
+func (r *Runner) index(readings []domain.Reading) {
+	r.hours, r.byHour = nil, map[time.Time][]domain.Reading{}
 	for _, x := range readings {
 		h := x.Timestamp.UTC().Truncate(time.Hour)
 		if _, ok := r.byHour[h]; !ok {
@@ -109,10 +119,18 @@ func NewRunner(engine *analysis.Engine, hub *Hub, meters []domain.Meter, reading
 		r.byHour[h] = append(r.byHour[h], x)
 	}
 	sort.Slice(r.hours, func(i, j int) bool { return r.hours[i].Before(r.hours[j]) })
+}
+
+// Reload replaces the readings (after a CSV import) and restarts the replay from
+// its first streamed hour, so a stream never mixes old and new data. Every client
+// gets a fresh snapshot.
+func (r *Runner) Reload(readings []domain.Reading) {
 	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.index(readings)
 	r.reset()
-	r.mu.Unlock()
-	return r
+	r.hub.Publish("snapshot", r.snapshot())
+	r.hub.Publish("control", r.state())
 }
 
 // reset preloads the days before StartDay and rebuilds the alert state (mu held).

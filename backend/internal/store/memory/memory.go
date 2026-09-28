@@ -163,3 +163,28 @@ func (s *Store) UpdateAnomalyStatus(_ context.Context, id string, st domain.Anom
 	}
 	return app.ErrNotFound
 }
+
+func (s *Store) UpsertReadings(_ context.Context, rs []domain.Reading) (added, replaced int, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	type key struct {
+		meter string
+		ts    int64
+	}
+	at := make(map[key]int, len(s.readings))
+	for i, r := range s.readings {
+		at[key{r.MeterID, r.Timestamp.Unix()}] = i
+	}
+	for _, r := range rs {
+		k := key{r.MeterID, r.Timestamp.Unix()}
+		if i, ok := at[k]; ok {
+			s.readings[i] = r
+			replaced++
+			continue
+		}
+		at[k] = len(s.readings)
+		s.readings = append(s.readings, r)
+		added++
+	}
+	return added, replaced, nil
+}

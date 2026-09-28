@@ -52,6 +52,13 @@ type ActionRepository interface {
 	Actions(ctx context.Context, anomalyID string) ([]domain.AnomalyAction, error)
 }
 
+// ReadingWriter adds readings after the initial load (CSV import).
+type ReadingWriter interface {
+	// UpsertReadings inserts new readings and replaces the ones with the same
+	// meter and timestamp. It returns how many were added and replaced.
+	UpsertReadings(ctx context.Context, rs []domain.Reading) (added, replaced int, err error)
+}
+
 // Seeder loads the initial dataset.
 type Seeder interface {
 	Empty(ctx context.Context) (bool, error)
@@ -65,5 +72,6 @@ type Store interface {
 	RunRepository
 	AnomalyRepository
 	ActionRepository
+	ReadingWriter
 	Seeder
 }

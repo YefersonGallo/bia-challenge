@@ -43,6 +43,9 @@ type server struct {
 // MaxBody caps request bodies: every JSON body of this API is tiny.
 const MaxBody = 1 << 20
 
+// MaxImport caps a readings CSV upload (~150 000 hourly readings).
+const MaxImport = 10 << 20
+
 // New returns the API handler.
 func New(svc *app.Service, cfg Config) http.Handler {
 	if cfg.Logger == nil {
@@ -68,6 +71,7 @@ func New(svc *app.Service, cfg Config) http.Handler {
 	mux.HandleFunc("POST /api/ai/analyze", s.analyze)
 	mux.HandleFunc("GET /api/ai/analysis/{id}", s.getAnalysis)
 	mux.HandleFunc("GET /api/reports/latest", s.report)
+	mux.HandleFunc("POST /api/data/readings", s.importReadings)
 	if cfg.Live != nil {
 		mux.HandleFunc("GET /api/stream", s.stream)
 		mux.HandleFunc("POST /api/stream/token", s.streamToken)
@@ -113,11 +117,15 @@ func securityHeaders(next http.Handler) http.Handler {
 
 func limitBody(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ContentLength > MaxBody {
+		limit := int64(MaxBody)
+		if r.URL.Path == "/api/data/readings" {
+			limit = MaxImport
+		}
+		if r.ContentLength > limit {
 			writeError(w, http.StatusRequestEntityTooLarge, "TOO_LARGE", "request body too large")
 			return
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, MaxBody)
+		r.Body = http.MaxBytesReader(w, r.Body, limit)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -455,6 +463,27 @@ func (s *server) analyze(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Location", "/api/ai/analysis/"+run.ID)
 	writeJSON(w, http.StatusAccepted, run)
+}
+
+// importReadings takes a CSV in the format of readings.csv as the raw body.
+// With ?dry_run=true it only validates it and says what would change.
+func (s *server) importReadings(w http.ResponseWriter, r *http.Request) {
+	dry := r.URL.Query().Get("dry_run") == "true"
+	out, err := s.svc.ImportReadings(r.Context(), r.Body, dry)
+	var ie *app.ImportError
+	if errors.As(err, &ie) {
+		code := http.StatusBadRequest
+		if strings.Contains(ie.Msg, "tamaño máximo") {
+			code = http.StatusRequestEntityTooLarge
+		}
+		writeError(w, code, "INVALID_CSV", ie.Msg)
+		return
+	}
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *server) getAnalysis(w http.ResponseWriter, r *http.Request) {

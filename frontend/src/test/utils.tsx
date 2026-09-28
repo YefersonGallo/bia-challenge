@@ -22,7 +22,7 @@ export function mockApi(routes: Record<string, Handler | unknown>) {
     const url = new URL(String(input), 'http://localhost')
     const method = (init?.method ?? 'GET').toUpperCase()
     const path = url.pathname.replace(/^\/api/, '')
-    const call: ApiCall = { method, path: path + url.search, body: init?.body ? JSON.parse(String(init.body)) : undefined }
+    const call: ApiCall = { method, path: path + url.search, body: typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body }
     calls.push(call)
     const key = `${method} ${path}`
     if (!(key in routes)) return new Response(JSON.stringify({ error: 'not found' }), { status: 404 })

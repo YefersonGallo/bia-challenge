@@ -50,7 +50,7 @@ export function AnomaliesPage() {
         <EmptyState
           title="Todavía no hay veredictos."
           action={
-            <Button variant="primary" onClick={analysis.start} disabled={analysis.running}>
+            <Button variant="primary" onClick={() => analysis.start()} disabled={analysis.running}>
               {analysis.running ? 'ANALIZANDO…' : 'RUN AI ANALYSIS'}
             </Button>
           }

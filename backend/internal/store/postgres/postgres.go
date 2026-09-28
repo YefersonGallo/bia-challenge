@@ -372,3 +372,34 @@ func (s *Store) UpdateAnomalyStatus(ctx context.Context, id string, st domain.An
 	}
 	return nil
 }
+
+// UpsertReadings writes the readings in one transaction; `xmax = 0` tells an
+// inserted row from an updated one.
+func (s *Store) UpsertReadings(ctx context.Context, rs []domain.Reading) (added, replaced int, err error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	stmt, err := tx.PrepareContext(ctx, `INSERT INTO readings (meter_id, ts, consumption_kwh, voltage_v, current_a, power_factor, status)
+		VALUES ($1,$2,$3,$4,$5,$6,$7)
+		ON CONFLICT (meter_id, ts) DO UPDATE SET consumption_kwh = EXCLUDED.consumption_kwh, voltage_v = EXCLUDED.voltage_v,
+			current_a = EXCLUDED.current_a, power_factor = EXCLUDED.power_factor, status = EXCLUDED.status
+		RETURNING (xmax = 0)`)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer stmt.Close()
+	for _, r := range rs {
+		var inserted bool
+		if err := stmt.QueryRowContext(ctx, r.MeterID, r.Timestamp, r.ConsumptionKWh, r.VoltageV, r.CurrentA, r.PowerFactor, r.Status).Scan(&inserted); err != nil {
+			return 0, 0, err
+		}
+		if inserted {
+			added++
+		} else {
+			replaced++
+		}
+	}
+	return added, replaced, tx.Commit()
+}
