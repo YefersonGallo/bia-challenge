@@ -8,6 +8,7 @@ import { AnomaliesPage } from '@/features/anomalies/AnomaliesPage'
 import { InvestigationPage } from '@/features/anomalies/InvestigationPage'
 import { ReportPage } from '@/features/report/ReportPage'
 import { DevPage } from '@/features/dev/DevPage'
+import { ImportPage } from '@/features/data/ImportPage'
 import { AppShell } from './AppShell'
 
 /** Route table: Operación → Medidores → Detalle → Anomalías IA → Investigación → Reporte. */
@@ -29,6 +30,7 @@ export const routes = [
       { path: 'anomalies', element: <AnomaliesPage /> },
       { path: 'anomalies/:id', element: <InvestigationPage /> },
       { path: 'report', element: <ReportPage /> },
+      { path: 'data/import', element: <ImportPage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

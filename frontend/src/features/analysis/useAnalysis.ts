@@ -46,12 +46,16 @@ export function useAnalysis() {
     run: current,
     running: busy,
     progress: runProgress(current),
-    // A double click must not send two requests.
-    start: () => {
+    // A double click must not send two requests. `onStarted` runs once the run
+    // exists (e.g. to navigate away: callbacks of an unmounted caller never run).
+    start: (onStarted?: () => void) => {
       if (busy || starting.current) return
       starting.current = true
       start.mutate(undefined, {
-        onSuccess: (r) => follow(r.id),
+        onSuccess: (r) => {
+          follow(r.id)
+          if (typeof onStarted === 'function') onStarted()
+        },
         onSettled: () => {
           starting.current = false
         },

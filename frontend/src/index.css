@@ -68,7 +68,7 @@
   color: var(--color-muted);
 }
 
-/* Printing the report ("EXPORTAR PDF"): the whole document, not the scrolled view. */
+/* Printing the report from the browser (Cmd/Ctrl+P): the whole document, not the scrolled view. The button downloads a PDF instead. */
 @media print {
   html,
   body,

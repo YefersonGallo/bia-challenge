@@ -28,7 +28,7 @@ function Probe() {
   const a = useAnalysis()
   return (
     <div>
-      <button onClick={a.start}>start</button>
+      <button onClick={() => a.start()}>start</button>
       <span data-testid="status">{a.run?.status ?? 'none'}</span>
       <span data-testid="progress">{a.progress}</span>
     </div>

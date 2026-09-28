@@ -23,6 +23,8 @@ type Options struct {
 	StepDelay time.Duration // artificial pause between steps so the UI can show progress
 	Clock     func() time.Time
 	Logger    *slog.Logger
+	// OnReadingsChanged runs after a CSV import changed the stored readings.
+	OnReadingsChanged func()
 }
 
 // Service implements every use case of the API.
@@ -38,6 +40,8 @@ type Service struct {
 
 	statsMu sync.Mutex
 	stats   map[string]analysis.MeterStats
+
+	importMu sync.Mutex // one CSV import at a time
 
 	markMu sync.Mutex
 	marks  map[string]time.Time // end of the previous step, per run (step durations)

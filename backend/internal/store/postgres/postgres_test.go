@@ -2,8 +2,10 @@ package postgres_test
 
 import (
 	"context"
+	"database/sql"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/yefersongallo/bia-energy/backend/internal/analysis"
 	"github.com/yefersongallo/bia-energy/backend/internal/app"
@@ -71,5 +73,45 @@ func TestPostgresStoreEndToEnd(t *testing.T) {
 	got, _ := st.Anomaly(ctx, as[0].ID)
 	if got.Status != domain.AnomalyAcknowledged {
 		t.Fatalf("status = %s", got.Status)
+	}
+}
+
+func TestPostgresUpsertReadings(t *testing.T) {
+	dsn := os.Getenv("TEST_DATABASE_URL")
+	if dsn == "" {
+		t.Skip("TEST_DATABASE_URL not set")
+	}
+	ctx := context.Background()
+	st, err := postgres.Open(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	if empty, _ := st.Empty(ctx); empty {
+		ds := dataset.Generate()
+		if err := st.Seed(ctx, ds.Meters, ds.Readings, ds.Events); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rs, _ := st.Readings(ctx)
+	orig := rs[0]
+	changed := orig
+	changed.ConsumptionKWh += 1
+	fresh := orig
+	fresh.Timestamp = time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	added, replaced, err := st.UpsertReadings(ctx, []domain.Reading{changed, fresh})
+	if err != nil || added != 1 || replaced != 1 {
+		t.Fatalf("added %d replaced %d err %v", added, replaced, err)
+	}
+	db, _ := sql.Open("postgres", dsn)
+	defer db.Close()
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(ctx, `DELETE FROM readings WHERE ts = $1`, fresh.Timestamp)
+		_, _, _ = st.UpsertReadings(ctx, []domain.Reading{orig})
+	})
+	var kwh float64
+	if err := db.QueryRowContext(ctx, `SELECT consumption_kwh FROM readings WHERE meter_id = $1 AND ts = $2`, orig.MeterID, orig.Timestamp).Scan(&kwh); err != nil || kwh != changed.ConsumptionKWh {
+		t.Fatalf("stored %v, want %v (%v)", kwh, changed.ConsumptionKWh, err)
 	}
 }

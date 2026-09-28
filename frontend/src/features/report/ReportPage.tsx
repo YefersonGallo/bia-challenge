@@ -5,13 +5,42 @@ import type { Report } from '@/shared/api/types'
 import { fmtConf, fmtDateTime, fmtNum, fmtPct } from '@/shared/lib/format'
 import { priorityTag, SEVERITY_LABEL, TYPE_META } from '@/shared/lib/labels'
 import { Button, EmptyState, ErrorBox, Label, Loading, Segmented } from '@/shared/ui/primitives'
-import { printPage } from '@/shared/lib/print'
+import { downloadPdf } from '@/shared/lib/pdf'
 import { useAnalysis } from '@/features/analysis/useAnalysis'
 import { FindingCard } from './FindingCard'
 import { classificationHeadline, consumptionHeadline, executiveSummary } from './narrative'
 import { useReportReview } from './useReportReview'
 
 type Mode = 'full' | 'exec'
+
+/** Downloads the report as shown (Completo or Ejecutivo) as a PDF file, without the print dialog. */
+function DownloadPdf({ runId, mode }: { runId: string; mode: Mode }) {
+  const [state, setState] = useState<'idle' | 'busy' | 'error'>('idle')
+  const run = async () => {
+    const el = document.getElementById('report-document')
+    if (!el || state === 'busy') return
+    setState('busy')
+    try {
+      const view = mode === 'exec' ? 'ejecutivo' : 'completo'
+      await downloadPdf(el, `vatio-reporte-${view}-${runId}.pdf`, `Vatio · Reporte de análisis IA · #${runId}`)
+      setState('idle')
+    } catch {
+      setState('error')
+    }
+  }
+  return (
+    <>
+      <Button onClick={run} disabled={state === 'busy'} aria-busy={state === 'busy'}>
+        {state === 'busy' ? 'GENERANDO PDF…' : 'DESCARGAR PDF'}
+      </Button>
+      {state === 'error' && (
+        <span role="alert" className="text-[12px] text-real">
+          No se pudo generar el PDF. Inténtalo de nuevo.
+        </span>
+      )}
+    </>
+  )
+}
 
 const SECTIONS = [
   { id: 'resumen', n: '00', title: 'Resumen ejecutivo', exec: true },
@@ -81,7 +110,7 @@ function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: Return
   const steps = r.plan.flatMap((p) => (p.steps ?? []).map((s, i) => ({ key: `${p.meter_id}-${i}`, text: s, p })))
 
   return (
-    <article className="mx-auto flex w-full max-w-[900px] flex-col gap-7 bg-paper px-6 py-10 text-paper-ink sm:px-14" aria-label="Reporte de análisis IA">
+    <article id="report-document" className="mx-auto flex w-full max-w-[900px] flex-col gap-7 bg-paper px-6 py-10 text-paper-ink sm:px-14" aria-label="Reporte de análisis IA">
       <header className="flex flex-col gap-2">
         <span className="font-display text-xl font-bold">Vatio</span>
         <span className="font-mono text-[11px] tracking-[0.08em] text-paper-muted">
@@ -245,7 +274,7 @@ function ReportBody({ r, mode, review }: { r: Report; mode: Mode; review: Return
             })}
           </div>
         ))}
-        <Link to="/" className="font-mono text-xs text-report print:hidden">
+        <Link to="/" data-pdf-skip className="font-mono text-xs text-report print:hidden">
           Seguir las alarmas en Operación →
         </Link>
       </Section>
@@ -322,7 +351,7 @@ export function ReportPage() {
         <EmptyState
           title="El reporte se genera con el análisis."
           action={
-            <Button variant="primary" onClick={analysis.start} disabled={analysis.running}>
+            <Button variant="primary" onClick={() => analysis.start()} disabled={analysis.running}>
               {analysis.running ? 'ANALIZANDO…' : 'RUN AI ANALYSIS'}
             </Button>
           }
@@ -368,7 +397,7 @@ export function ReportPage() {
             <input type="checkbox" checked={review.reviewed} onChange={(e) => review.setReviewed(e.target.checked)} />
             Marcar como revisado
           </label>
-          <Button onClick={printPage}>EXPORTAR PDF</Button>
+          <DownloadPdf runId={r.run_id} mode={mode} />
         </div>
       </aside>
       <div className="min-h-0 overflow-y-auto bg-[#e9eaee] py-6 print:overflow-visible print:bg-white print:py-0">

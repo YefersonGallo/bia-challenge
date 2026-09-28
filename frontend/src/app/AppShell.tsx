@@ -112,7 +112,7 @@ export function AppShell() {
             {aiText}
           </span>
           {startError && <span className="text-real">No se pudo iniciar</span>}
-          <button type="button" onClick={start} disabled={running} className="h-[34px] rounded bg-ink px-3.5 text-[11px] font-semibold text-bg disabled:opacity-60">
+          <button type="button" onClick={() => start()} disabled={running} className="h-[34px] rounded bg-ink px-3.5 text-[11px] font-semibold text-bg disabled:opacity-60">
             {running ? 'ANALIZANDO…' : 'RUN AI ANALYSIS'}
           </button>
           <UserMenu />

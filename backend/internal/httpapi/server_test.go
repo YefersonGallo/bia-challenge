@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -353,5 +354,41 @@ func TestSingleImageKeeps405AndJSONForTheAPI(t *testing.T) {
 		if rec.Code != want || !strings.Contains(rec.Header().Get("Content-Type"), "json") {
 			t.Errorf("GET %s = %d %s, want %d JSON", path, rec.Code, rec.Header().Get("Content-Type"), want)
 		}
+	}
+}
+
+func TestImportReadingsEndpoint(t *testing.T) {
+	hs := setup(t)
+	post := func(q, body, token string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("POST", "/api/data/readings"+q, strings.NewReader(body))
+		req.Header.Set("Content-Type", "text/csv")
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		rec := httptest.NewRecorder()
+		hs.h.ServeHTTP(rec, req)
+		return rec
+	}
+	head := "meter_id,timestamp,consumption_kwh,voltage_v,current_a,power_factor\n"
+	var b strings.Builder
+	b.WriteString(head)
+	start := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	for i := 0; b.Len() < httpapi.MaxBody+100_000; i++ { // larger than the 1 MB of the other endpoints
+		fmt.Fprintf(&b, "M-101,%s,40.5,220.1,180.3,0.93\n", start.Add(time.Duration(i)*time.Hour).Format("2006-01-02 15:04:05"))
+	}
+	if rec := post("?dry_run=true", b.String(), ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("without session = %d", rec.Code)
+	}
+	rec := post("?dry_run=true", b.String(), hs.token)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"applied":false`) {
+		t.Fatalf("dry run = %d %s", rec.Code, rec.Body.String()[:min(200, rec.Body.Len())])
+	}
+	rec = post("", head+"M-999,2030-01-01 00:00:00,1,220,180,0.9\n", hs.token)
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "INVALID_CSV") || !strings.Contains(rec.Body.String(), "M-999") {
+		t.Fatalf("unknown meter = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = post("", head+"M-101,2030-01-01 00:00:00,1,220,180,0.9\n", hs.token)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"applied":true`) || !strings.Contains(rec.Body.String(), `"added":1`) {
+		t.Fatalf("import = %d %s", rec.Code, rec.Body.String())
 	}
 }

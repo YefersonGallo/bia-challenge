@@ -149,7 +149,7 @@ export function MeterDetailPage() {
                     : 'Las reglas marcan este medidor, pero aún no hay veredicto de la IA.'}
                 </p>
                 {m.status !== 'OK' && (
-                  <Button variant="primary" onClick={analysis.start} disabled={analysis.running}>
+                  <Button variant="primary" onClick={() => analysis.start()} disabled={analysis.running}>
                     RUN AI ANALYSIS
                   </Button>
                 )}

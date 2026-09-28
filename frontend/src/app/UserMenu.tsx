@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/authStore'
 
-/** Avatar that opens a menu with the session, the dev mode link and an explicit "Cerrar sesión". */
+/** Avatar that opens a menu with the session, the CSV import, the dev mode link and an explicit "Cerrar sesión". */
 export function UserMenu() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -59,9 +59,20 @@ export function UserMenu() {
           <Link
             ref={first}
             role="menuitem"
-            to="/dev"
+            to="/data/import"
             onClick={() => setOpen(false)}
             className="mt-1 flex items-center justify-between rounded px-2.5 py-2 text-[13px] text-ink-2 no-underline hover:bg-raise focus:bg-raise focus:outline-none"
+          >
+            Cargar lecturas (CSV)
+            <span aria-hidden className="font-mono text-[11px] text-muted">
+              ↑
+            </span>
+          </Link>
+          <Link
+            role="menuitem"
+            to="/dev"
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-between rounded px-2.5 py-2 text-[13px] text-ink-2 no-underline hover:bg-raise focus:bg-raise focus:outline-none"
           >
             Dev mode · arquitectura
             <span aria-hidden className="font-mono text-[11px] text-muted">

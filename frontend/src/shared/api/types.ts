@@ -365,3 +365,16 @@ export interface Forecast {
   projected_kwh: number
   impact: Impact | null
 }
+
+/** What a readings CSV contains and what importing it changes (POST /data/readings). */
+export interface ImportResult {
+  rows: number
+  added: number
+  replaced: number
+  duplicates: number
+  meters: string[]
+  from: string
+  to: string
+  warnings: string[]
+  applied: boolean
+}

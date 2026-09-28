@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -147,7 +148,15 @@ func parseFloat(s string) (float64, error) {
 	if s == "" {
 		return 0, errors.New("empty value")
 	}
-	return strconv.ParseFloat(strings.ReplaceAll(s, ",", "."), 64)
+	v, err := strconv.ParseFloat(strings.ReplaceAll(s, ",", "."), 64)
+	if err != nil {
+		return 0, err
+	}
+	// NaN and ±Inf parse fine but break every calculation and the JSON output.
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0, fmt.Errorf("invalid number %q", s)
+	}
+	return v, nil
 }
 
 // newReader detects the separator from the header line: "," or ";" (the
